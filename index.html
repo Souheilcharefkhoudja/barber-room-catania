@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>Barber Room Catania — Barbiere a Piazza Michelangelo | Prenota online</title>
+<meta name="description" content="Barber Room Catania: specialisti nella cura della barba e dei capelli, esperti del capello riccio. Piazza Michelangelo Buonarroti 5/6. Prenota il tuo appuntamento online in un minuto.">
+<!-- Design proposal: kept out of search engines until the owner approves it. -->
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c0908">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Barber Room Catania — Prenota online">
+<meta property="og:description" content="Specialisti nella cura della barba e dei capelli. Prenota il tuo posto in un minuto.">
+<meta property="og:image" content="assets/img/og.jpg">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="assets/img/poltrone.webp">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Barber Room">
+    <span class="brand__mark">BR</span>
+    <span class="brand__name">Barber Room<small>Catania</small></span>
+  </a>
+  <nav class="nav__links" id="navLinks">
+    <a href="#servizi" data-t="nav_services">Servizi</a>
+    <a href="#prenota" data-t="nav_book">Prenota</a>
+    <a href="#salone" data-t="nav_salon">Il salone</a>
+    <a href="#recensioni" data-t="nav_reviews">Recensioni</a>
+    <a href="#dove" data-t="nav_where">Dove siamo</a>
+  </nav>
+  <div class="nav__side">
+    <div class="lang" role="group" aria-label="Lingua / Language"><button type="button" data-lang="it">IT</button><button type="button" data-lang="en">EN</button></div>
+    <a class="btn btn--gold btn--sm nav__cta" href="#prenota" data-t="nav_cta">Prenota ora</a>
+    <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__text">
+      <p class="kicker rise" style="--d:.05s"><span class="kicker__line"></span><span data-t="hero_kicker">Barber Room · Catania</span></p>
+      <h1 class="hero__title rise" style="--d:.15s"><span data-t="hero_title_a">Specialisti nella cura</span> <em data-t="hero_title_b">della barba e dei capelli.</em></h1>
+      <p class="hero__lead rise" style="--d:.3s" data-t="hero_lead"></p>
+      <div class="hero__cta rise" style="--d:.42s">
+        <a class="btn btn--gold" href="#prenota"><span data-t="hero_book">Prenota il tuo posto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn--line" href="#servizi" data-t="hero_services">Vedi i servizi</a>
+      </div>
+      <div class="hero__chips rise" style="--d:.55s">
+        <a class="chip" id="ratingChip" target="_blank" rel="noopener"><b>4,9</b><span class="stars" style="--v:4.9"></span><span id="ratingCount"></span></a>
+        <span class="chip chip--status" id="openChip"></span>
+      </div>
+    </div>
+    <div class="hero__art rise" style="--d:.2s">
+      <figure class="arch"><img src="assets/img/poltrone.webp" alt="Le poltrone rosso bordeaux di Barber Room" width="1200" height="1600" fetchpriority="high"></figure>
+      <figure class="medal"><img src="assets/img/sfumatura.webp" alt="Sfumatura e barba" width="720" height="720"></figure>
+      <span class="seal" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><path id="ring" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0"/></defs><text><textPath href="#ring">BARBER ROOM · HAIR &amp; BEARD · CATANIA · </textPath></text></svg><i>BR</i></span>
+    </div>
+  </section>
+
+  <div class="ribbon" aria-hidden="true"><div class="ribbon__track" id="ribbon"></div></div>
+
+  <!-- ============ Services ============ -->
+  <section class="block" id="servizi">
+    <div class="wrap">
+      <header class="head">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="services_kicker">I servizi</span></p>
+        <h2 data-t-html="services_title"></h2>
+      </header>
+      <div class="services" id="serviceGrid"></div>
+    </div>
+  </section>
+
+  <!-- ============ Booking ============ -->
+  <section class="block block--book" id="prenota">
+    <div class="wrap">
+      <header class="head">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="book_kicker">Prenotazione</span></p>
+        <h2 data-t-html="book_title"></h2>
+      </header>
+
+      <!-- One screen: tap a service, tap a time, leave a name and a number. -->
+      <div class="booker" id="booker">
+        <div class="bk" id="bkFlow">
+          <div class="bk__row">
+            <h3 class="bk__q"><b>1</b><span data-t="q_service"></span></h3>
+            <div class="chips" id="svcChips"></div>
+          </div>
+
+          <div class="bk__row" id="rowWhen" hidden>
+            <h3 class="bk__q"><b>2</b><span data-t="q_when"></span></h3>
+            <button class="first" type="button" id="firstFree" hidden><span class="first__dot"></span><span data-t="first_free"></span><b id="firstFreeLabel"></b></button>
+            <div class="days">
+              <button class="days__arrow" type="button" id="daysPrev" aria-label="‹"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 6l-6 6 6 6"/></svg></button>
+              <div class="days__strip" id="dayStrip"></div>
+              <button class="days__arrow" type="button" id="daysNext" aria-label="›"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></button>
+            </div>
+            <div id="slots"></div>
+          </div>
+
+          <form class="bk__row" id="rowWho" hidden novalidate>
+            <h3 class="bk__q"><b>3</b><span data-t="q_who"></span></h3>
+            <div class="form-grid">
+              <label class="field"><span data-t="f_name"></span><input class="input" name="name" autocomplete="name" required enterkeyhint="next"></label>
+              <label class="field"><span data-t="f_phone"></span><input class="input" name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+39 3xx xxx xxxx" enterkeyhint="done"></label>
+            </div>
+            <details class="more">
+              <summary data-t="add_more"></summary>
+              <div class="form-grid">
+                <label class="field"><span data-t="f_email"></span><input class="input" name="email" type="email" autocomplete="email"></label>
+                <label class="field"><span data-t="f_note"></span><input class="input" name="note"></label>
+              </div>
+            </details>
+            <button class="btn btn--gold btn--book" type="submit" id="bookBtn"><span data-t="book_cta"></span><small id="bookWhat"></small></button>
+            <p class="form-error" id="formError" role="alert"></p>
+            <p class="fine" data-t="privacy_note"></p>
+          </form>
+        </div>
+
+        <div class="done" id="done" hidden>
+          <div class="done__tick" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg></div>
+          <h3 class="done__title" data-t="done_title"></h3>
+          <p class="done__lead" id="doneLead"></p>
+          <div class="done__code"><span data-t="done_code"></span><b id="doneCode"></b></div>
+          <div class="done__actions">
+            <a class="btn btn--gold" id="icsLink" download="barber-room.ics"><span data-t="done_calendar"></span></a>
+            <a class="btn btn--line" id="waLink" target="_blank" rel="noopener"><span data-t="done_whatsapp"></span></a>
+          </div>
+          <p class="done__small" id="doneChange"></p>
+          <button class="btn btn--ghost" type="button" id="newBooking" data-t="done_new"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Salon ============ -->
+  <section class="block" id="salone">
+    <div class="wrap salon">
+      <div class="salon__art">
+        <figure class="salon__a reveal"><img src="assets/img/salone.webp" alt="Il salone, con il tappeto persiano e il grammofono" loading="lazy" width="1200" height="1600"></figure>
+        <figure class="salon__b reveal"><img src="assets/img/reception.webp" alt="Il bancone d’ingresso in legno" loading="lazy" width="1200" height="1600"></figure>
+        <figure class="salon__c reveal"><img src="assets/img/taglio.webp" alt="Un taglio sfumato visto da dietro" loading="lazy" width="1200" height="1600"></figure>
+      </div>
+      <div class="salon__text reveal">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="salon_kicker">Il salone</span></p>
+        <h2 data-t-html="salon_title"></h2>
+        <p class="lede" data-t="salon_lead"></p>
+        <p data-t="salon_p"></p>
+        <ul class="pillars">
+          <li><b>I</b><span data-t="pillar_1"></span></li>
+          <li><b>II</b><span data-t="pillar_2"></span></li>
+          <li><b>III</b><span data-t="pillar_3"></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Reviews ============ -->
+  <section class="block block--reviews" id="recensioni">
+    <div class="wrap reviews">
+      <div class="score reveal">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="reviews_kicker">Dicono di noi</span></p>
+        <h2 id="reviewsTitle"></h2>
+        <div class="score__big"><b>4,9</b><span class="stars" style="--v:4.9"></span></div>
+        <ol class="bars" id="bars"></ol>
+        <a class="btn btn--line" id="reviewsLink" target="_blank" rel="noopener" data-t="reviews_all"></a>
+      </div>
+      <div class="quotes reveal">
+        <figure class="quote"><span class="stars" style="--v:5"></span><blockquote>Barbieri molto simpatici e competenti, soprattutto nel tagliare i capelli ricci.</blockquote><figcaption>Google</figcaption></figure>
+        <figure class="quote"><span class="stars" style="--v:5"></span><blockquote>Ottimo servizio, super gentili e preparati in tutto, lo consiglio tanto ✌️</blockquote><figcaption>Google</figcaption></figure>
+        <figure class="quote"><span class="stars" style="--v:5"></span><blockquote>Ho trovato il mio barbiere fisso!</blockquote><figcaption>Google</figcaption></figure>
+        <figure class="quote"><span class="stars" style="--v:5"></span><blockquote>Esperienza davvero eccellente!</blockquote><figcaption>Google</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Where ============ -->
+  <section class="block" id="dove">
+    <div class="wrap where">
+      <div class="where__info reveal">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="where_kicker">Dove siamo</span></p>
+        <h2 data-t-html="where_title"></h2>
+        <dl class="facts">
+          <div><dt data-t="address"></dt><dd>Piazza Michelangelo Buonarroti, 5/6<br>95128 Catania</dd></div>
+          <div><dt data-t="hours"></dt><dd id="hoursList"></dd></div>
+          <div><dt data-t="phone"></dt><dd><a href="tel:+393895884163">389 588 4163</a></dd></div>
+          <div><dt data-t="social"></dt><dd><a href="https://www.instagram.com/barber.room_catania/" target="_blank" rel="noopener">Instagram</a><br><a href="https://www.facebook.com/barberroomcatania/" target="_blank" rel="noopener">Facebook</a></dd></div>
+        </dl>
+        <div class="where__cta">
+          <a class="btn btn--gold" href="#prenota" data-t="nav_cta"></a>
+          <a class="btn btn--line" id="dirLink" target="_blank" rel="noopener" data-t="directions"></a>
+        </div>
+        <p class="where__also" data-t="also_misterbianco"></p>
+      </div>
+      <div class="map reveal">
+        <iframe id="mapFrame" title="Mappa" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a class="map__open" id="mapOpen" target="_blank" rel="noopener"><span data-t="open_maps"></span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot__name">Barber Room</div>
+  <p class="foot__tag"><span class="foot__script">Specialisti</span> <span>nella cura della barba e dei capelli</span></p>
+  <p class="foot__line">Piazza Michelangelo Buonarroti, 5/6 · 95128 Catania · <a href="tel:+393895884163">389 588 4163</a></p>
+  <p class="foot__small">© <span id="year"></span> Barber Room · <span data-t="footer_proposal"></span> · <a href="admin.html">Admin</a></p>
+</footer>
+
+<nav class="dock" aria-label="Azioni rapide">
+  <a class="dock__main" href="#prenota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span data-t="dock_book"></span></a>
+  <a href="tel:+393895884163"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg><span data-t="dock_call"></span></a>
+  <a id="dockMap" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span data-t="dock_map"></span></a>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="assets/js/site.js"></script>
+</body>
+</html>
