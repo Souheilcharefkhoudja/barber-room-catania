@@ -19,29 +19,45 @@ export const weekday = (day) => parseDay(day).getUTCDay(); // 0 = Sunday
 export const ACTIVE = new Set(['confirmed', 'completed']); // statuses that hold a chair
 
 /**
+ * Can a booking from `start` to `end` on `day` go in? No closure may overlap it, and at its busiest moment
+ * fewer than `chairs` other appointments may be running. With chairs = 1 no two appointments ever overlap.
+ */
+export function fits(settings, busy, day, start, end, ignoreId = null) {
+  const overlap = busy.filter((b) => b.day === day && b.id !== ignoreId && (ACTIVE.has(b.status) || b.status === 'blocked') && b.start < end && b.end > start);
+  if (overlap.some((b) => b.status === 'blocked')) return false;
+  let peak = 0;
+  for (const p of [start, ...overlap.map((b) => b.start).filter((s) => s > start)]) {
+    peak = Math.max(peak, overlap.filter((b) => b.start <= p && b.end > p).length);
+  }
+  return peak < settings.chairs;
+}
+
+/**
  * Free start times for a booking of `length` minutes on `day`.
  * busy: [{ day, start, end, status }] — 'blocked' closes the whole shop for that span; other active ones take a chair each.
  */
 export function freeSlots({ settings, day, length, busy, now }) {
-  const ranges = settings.hours[weekday(day)] || [];
-  const taken = busy.filter((b) => b.day === day && (ACTIVE.has(b.status) || b.status === 'blocked'));
   const out = [];
-  for (const [o, c] of ranges) {
+  for (const t of startTimes(settings, day, length, now)) if (fits(settings, busy, day, t, t + length)) out.push(t);
+  return out;
+}
+
+// Every start time the opening hours allow (still ahead of the minimum notice), free or not.
+export function startTimes(settings, day, length, now) {
+  const out = [];
+  if (now && day < now.day) return out;
+  for (const [o, c] of settings.hours[weekday(day)] || []) {
     for (let t = toMin(o); t + length <= toMin(c); t += settings.step) {
       if (now && day === now.day && t < now.min + settings.minNotice) continue;
-      if (now && day < now.day) continue;
-      const end = t + length;
-      const overlap = taken.filter((b) => b.start < end && b.end > t);
-      if (overlap.some((b) => b.status === 'blocked')) continue;
-      // Chairs in use at the busiest moment inside this span.
-      let peak = 0;
-      for (const p of [t, ...overlap.map((b) => b.start).filter((s) => s > t)]) {
-        peak = Math.max(peak, overlap.filter((b) => b.start <= p && b.end > p).length);
-      }
-      if (peak < settings.chairs) out.push(t);
+      out.push(t);
     }
   }
   return out;
+}
+
+// The day as the client sees it: every time, marked free or taken.
+export function slotGrid({ settings, day, length, busy, now }) {
+  return startTimes(settings, day, length, now).map((t) => ({ t, free: fits(settings, busy, day, t, t + length) }));
 }
 
 export function isOpen(settings, day) { return (settings.hours[weekday(day)] || []).length > 0; }

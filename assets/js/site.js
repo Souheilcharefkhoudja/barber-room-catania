@@ -1,6 +1,6 @@
 import { SHOP } from './config.js';
 import { createStore } from './store.js';
-import { freeSlots, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday } from './engine.js';
+import { freeSlots, slotGrid, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday } from './engine.js';
 import { t, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcDesc } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -148,13 +148,16 @@ function renderWhen() {
   if (on) $('#dayStrip').scrollLeft = on.offsetLeft - $('#dayStrip').offsetLeft - 8;
 
   if (!state.day) { $('#slots').innerHTML = `<p class="empty">${esc(t('no_slots'))}</p>`; return; }
-  const slots = slotsFor(state.day);
-  if (!slots.length) { $('#slots').innerHTML = `<p class="empty">${esc(t('no_slots'))}</p>`; return; }
-  const groups = [[t('morning'), slots.filter((m) => m < 13 * 60)], [t('afternoon'), slots.filter((m) => m >= 13 * 60)]].filter(([, l]) => l.length);
+  // Taken times stay on the grid, crossed out: one client per time, and everyone can see it.
+  const grid = slotGrid({ settings, day: state.day, length: length(), busy, now: shopNow(SHOP.timezone) });
+  if (!grid.some((x) => x.free)) { $('#slots').innerHTML = `<p class="empty">${esc(t('no_slots'))}</p>`; return; }
+  const groups = [[t('morning'), grid.filter((x) => x.t < 13 * 60)], [t('afternoon'), grid.filter((x) => x.t >= 13 * 60)]].filter(([, l]) => l.length);
   $('#slots').innerHTML = groups.map(([name, list]) => `
     <div class="slot-group"><h4>${esc(name)}</h4><div class="slot-grid">
-      ${list.map((m) => `<button class="slot${state.start === m ? ' is-on' : ''}" type="button" data-min="${m}">${toHHMM(m)}</button>`).join('')}
-    </div></div>`).join('');
+      ${list.map((x) => x.free
+        ? `<button class="slot${state.start === x.t ? ' is-on' : ''}" type="button" data-min="${x.t}">${toHHMM(x.t)}</button>`
+        : `<span class="slot is-taken" title="${esc(t('taken'))}" aria-label="${toHHMM(x.t)} · ${esc(t('taken'))}">${toHHMM(x.t)}</span>`).join('')}
+    </div></div>`).join('') + `<p class="slot-legend"><span class="slot is-taken">00:00</span>${esc(t('taken_legend'))}</p>`;
 }
 $('#dayStrip').addEventListener('click', (e) => {
   const b = e.target.closest('[data-day]');

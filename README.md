@@ -30,7 +30,7 @@ Each visitor's browser keeps its own demo data, so a client's booking does not r
 5. Open `admin.html`, sign in, go to Settings and press Save once: this stores services and hours in the database.
 
 From then on bookings are shared: visitors can see only which times are taken (no names or numbers), every booking is
-re-checked inside the database under a lock so two people can never take the last chair, and the panel updates live.
+re-checked inside the database under a lock, and a database trigger refuses any overlapping appointment (web or typed in by the barber): one client per time slot. The panel updates live.
 
 ## Edit
 
@@ -46,6 +46,6 @@ re-checked inside the database under a lock so two people can never take the las
 
 - Services and durations are starting values: the service names come from the shop's own pages and reviews, but no
   public price list exists, so prices are empty ("Prezzo in salone") until set in Settings.
-- Number of chairs that work at the same time (set to 2).
+- One client per time slot (set by default). If a second barber starts, raise "Clients at the same time" in Settings.
 - Photos come from the shop's Google Maps listing; use them only with the owner's agreement, or replace them.
 - The site is hidden from search engines (`noindex` in `index.html`) until the owner approves it.

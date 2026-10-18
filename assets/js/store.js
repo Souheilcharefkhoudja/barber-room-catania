@@ -3,9 +3,9 @@
 //    open in another tab of the same browser, instantly).
 //  - SupabaseStore: live mode, a shared database; used as soon as SUPABASE.url is filled in config.js.
 import { SUPABASE, DEFAULT_SETTINGS, DEMO_PIN, SHOP } from './config.js';
-import { freeSlots, serviceLength, makeCode, shopNow, addDays, isOpen, toMin } from './engine.js';
+import { freeSlots, fits, ACTIVE, serviceLength, makeCode, shopNow, addDays, isOpen, toMin } from './engine.js';
 
-const KEY = 'barberroom.v1';
+const KEY = 'barberroom.v3';
 
 export function createStore() {
   return SUPABASE.url ? new SupabaseStore() : new LocalStore();
@@ -50,10 +50,17 @@ class LocalStore {
   async logout() { sessionStorage.removeItem(KEY + '.auth'); }
   async bookings(from, to) { return this.read().bookings.filter((b) => b.day >= from && b.day <= to).sort((a, b) => a.day.localeCompare(b.day) || a.start - b.start); }
   async allBookings() { return this.read().bookings; }
-  async updateBooking(id, patch) { const s = this.read(); const b = s.bookings.find((x) => x.id === id); Object.assign(b, patch); this.write(s); return b; }
+  async updateBooking(id, patch) {
+    const s = this.read(); const b = s.bookings.find((x) => x.id === id);
+    const next = { ...b, ...patch };
+    // Bringing a cancelled appointment back must not land on top of someone else.
+    if (ACTIVE.has(next.status) && !ACTIVE.has(b.status) && !fits(s.settings, s.bookings, next.day, next.start, next.end, id)) throw new Error('slot-taken');
+    Object.assign(b, patch); this.write(s); return b;
+  }
   async deleteBooking(id) { const s = this.read(); s.bookings = s.bookings.filter((x) => x.id !== id); this.write(s); }
-  async addManual(b) { // walk-ins, phone bookings and closures typed in by the barber; he may overrule the free-slot check
+  async addManual(b) { // walk-ins, phone bookings and closures typed in by the barber; appointments still never overlap
     const s = this.read();
+    if (b.status !== 'blocked' && !fits(s.settings, s.bookings, b.day, b.start, b.end)) throw new Error('slot-taken');
     const row = { id: crypto.randomUUID(), code: makeCode(), email: '', note: '', lang: 'it', source: 'admin', created: new Date().toISOString(), status: 'confirmed', ...b };
     s.bookings.push(row); this.write(s); return row;
   }
@@ -77,6 +84,10 @@ class LocalStore {
     });
     const ids = s.settings.services.map((x) => x.id);
     const today = shopNow(SHOP.timezone).day;
+    // A lunch break on one day, to show closures in the agenda (placed first, so nobody is booked over it).
+    const nextOpen = [1, 2, 3, 4, 5].map((n) => addDays(today, n)).find((x) => isOpen(s.settings, x));
+    if (nextOpen) s.bookings.push({ id: crypto.randomUUID(), code: makeCode(), day: nextOpen, start: toMin('13:00'), end: toMin('14:00'), services: [],
+      name: 'Pausa pranzo', phone: '', email: '', note: '', lang: 'it', status: 'blocked', source: 'admin', created: new Date().toISOString(), demo: true });
     for (let d = -28; d <= 6; d++) {
       const day = addDays(today, d);
       if (!isOpen(s.settings, day)) continue;
@@ -95,10 +106,6 @@ class LocalStore {
           status, source: rnd() < .7 ? 'web' : 'admin', created: new Date(Date.now() + (d - 2) * 864e5).toISOString(), demo: true });
       }
     }
-    // A lunch break on one day, to show closures in the agenda.
-    const nextOpen = [1, 2, 3, 4, 5].map((n) => addDays(today, n)).find((x) => isOpen(s.settings, x));
-    if (nextOpen) s.bookings.push({ id: crypto.randomUUID(), code: makeCode(), day: nextOpen, start: toMin('13:00'), end: toMin('14:00'), services: [],
-      name: 'Pausa pranzo', phone: '', email: '', note: '', lang: 'it', status: 'blocked', source: 'admin', created: new Date().toISOString(), demo: true });
     s.seeded = true;
     this.write(s);
   }

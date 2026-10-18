@@ -1,6 +1,6 @@
 import { SHOP, DEMO_PIN } from './config.js';
 import { createStore } from './store.js';
-import { freeSlots, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday, normalPhone, parseDay, ACTIVE } from './engine.js';
+import { freeSlots, fits, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday, normalPhone, parseDay, ACTIVE } from './engine.js';
 import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -74,7 +74,7 @@ async function enter() {
 async function load() { settings = await store.settings(); all = await store.allBookings(); }
 
 $('#demoReset').addEventListener('click', async () => { await store.resetDemo(); await load(); render(); });
-$$('#tabs [data-view]').forEach((b) => b.addEventListener('click', () => { view = b.dataset.view; closeDrawer(); render(); scrollTo({ top: 0 }); }));
+$$('#tabs [data-view]').forEach((b) => b.addEventListener('click', () => { view = b.dataset.view; if (view === 'today') dayView = null; closeDrawer(); render(); scrollTo({ top: 0 }); }));
 $('#newBtn').addEventListener('click', () => openNew({}));
 $('#blockBtn').addEventListener('click', () => openBlock({}));
 document.addEventListener('langchange', () => { if (!$('#app').hidden) render(); else showLogin(); });
@@ -87,54 +87,170 @@ function render() {
   ({ today: renderToday, agenda: renderAgenda, clients: renderClients, settings: renderSettings })[view]();
 }
 
-/* ---------------- today ---------------- */
+/* ---------------- today: one day, as a clean list ---------------- */
+let dayView = null; // the day the Today tab shows; null follows the real today
+
+// "+39 389 588 4163" whatever way the client typed it.
+function prettyPhone(raw) {
+  const d = normalPhone(raw);
+  const m = d.match(/^\+39(\d{3})(\d{3})(\d{3,4})$/);
+  return m ? `+39 ${m[1]} ${m[2]} ${m[3]}` : d;
+}
+
+const PHONE_ICON = '<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg>';
+const WA_ICON = '<svg viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 18.8z"/><path d="M9 9.5c.3 1.6 1.8 3.2 3.5 3.8l1.2-1 1.8.8c-.2 1.1-1 1.7-2.1 1.6-2.8-.4-5.2-2.8-5.6-5.6-.1-1.1.5-1.9 1.6-2.1l.8 1.8z"/></svg>';
+const TICK_ICON = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
 function renderToday() {
   const n = now();
+  const day = dayView || n.day;
   const h = Math.floor(n.min / 60);
-  $('#topKicker').textContent = fmtDay(n.day, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('#topKicker').textContent = fmtDay(n.day, { weekday: 'long', day: 'numeric', month: 'long' });
   $('#topTitle').innerHTML = esc(t(h < 13 ? 'a_hi_morning' : h < 18 ? 'a_hi_afternoon' : 'a_hi_evening'));
 
-  const today = all.filter((b) => b.day === n.day && b.status !== 'blocked');
-  const todayLive = today.filter(live);
-  const done = today.filter((b) => b.status === 'completed').length;
-  const current = todayLive.find((b) => b.start <= n.min && b.end > n.min && b.status === 'confirmed');
-  const next = todayLive.filter((b) => b.status === 'confirmed' && b.start > n.min).sort((a, b) => a.start - b.start)[0];
-  const nextLabel = current ? `${esc(current.name)}<small>${t('a_now')} · ${toHHMM(current.start)}–${toHHMM(current.end)}</small>`
-    : next ? `${esc(next.name)}<small>${toHHMM(next.start)} · ${t('a_in', { t: dur(next.start - n.min) })}</small>` : `${t('a_none')}<small>&nbsp;</small>`;
+  const list = all.filter((b) => b.day === day && b.status !== 'cancelled').sort((a, b) => a.start - b.start);
+  const appts = list.filter((b) => b.status !== 'blocked');
+  let spot = null, state = '';
+  if (day === n.day) {
+    spot = appts.find((b) => b.status === 'confirmed' && b.start <= n.min && b.end > n.min);
+    state = spot ? 'now' : '';
+    if (!spot) { spot = appts.find((b) => b.status === 'confirmed' && b.start > n.min); state = spot ? 'next' : ''; }
+  } else if (day > n.day) { spot = appts.find((b) => b.status === 'confirmed'); state = spot ? 'first' : ''; }
 
-  // Chairs booked this week, against the hours the shop is open.
+  $('#view').innerHTML = `
+    ${dayStrip(day)}
+    <div class="dayview">
+      <div class="dayview__main">
+        ${spot ? spotlight(spot, state) : emptySpot(day)}
+        ${list.length ? `<section class="card"><div class="card__head"><h2>${esc(day === n.day ? t('a_day_list_today') : fmtDay(day))}</h2><span class="count">${appts.filter(live).length} ${appts.filter(live).length === 1 ? t('a_appt_1') : t('a_appt_n')}</span></div>
+          <div class="card__body"><div class="alist">${dayList(day, list)}</div></div></section>` : ''}
+      </div>
+      <aside class="dayview__side">${stats()}</aside>
+    </div>`;
+
+  $$('[data-goday]', $('#view')).forEach((b) => b.addEventListener('click', () => { dayView = b.dataset.goday === n.day ? null : b.dataset.goday; render(); }));
+  $$('[data-quick]', $('#view')).forEach((b) => b.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try { await store.updateBooking(b.dataset.id, { status: b.dataset.quick }); } catch { toast(t('a_m_busy_warn')); return; }
+    await load(); render(); toast(t('a_saved'));
+  }));
+  $$('.appt a, .spot a', $('#view')).forEach((a) => a.addEventListener('click', (e) => e.stopPropagation()));
+  $('[data-go]', $('#view'))?.addEventListener('click', (e) => { e.preventDefault(); view = 'settings'; render(); });
+  bindEvents();
+}
+
+// Nobody due: say so, and offer the next day the salon is open.
+function emptySpot(day) {
+  const n = now();
+  let next = null;
+  for (let i = 1; i < 14 && !next; i++) { const d = addDays(day, i); if (isOpen(settings, d) && d < addDays(n.day, 14)) next = d; }
+  return `<section class="card spot spot--empty"><span class="spot__label"><span class="spot__dot"></span>${esc(day === n.day ? t('a_k_next') : fmtDay(day))}</span>
+    <p>${esc(isOpen(settings, day) ? (day === n.day ? t('a_spot_free') : t('a_no_appts')) : t('a_closed_day'))}</p>
+    ${next ? `<button class="btn btn--line btn--sm" type="button" data-goday="${next}">${esc(t('a_next_open', { d: fmtDay(next, { weekday: 'long', day: 'numeric' }) }))} →</button>` : ''}</section>`;
+}
+
+// Fourteen days ahead, with a dot for each appointment.
+function dayStrip(sel) {
+  const n = now();
+  const days = Array.from({ length: 14 }, (_, i) => addDays(n.day, i));
+  return `<div class="dstrip">${days.map((d) => {
+    const c = all.filter((b) => b.day === d && live(b)).length;
+    const dots = Array.from({ length: Math.min(c, 6) }, () => '<i></i>').join('');
+    return `<button class="dstrip__day${d === sel ? ' is-on' : ''}${isOpen(settings, d) ? '' : ' is-closed'}" type="button" data-goday="${d}">
+      <small>${esc(d === n.day ? t('a_today') : fmtDay(d, { weekday: 'short' }))}</small><b>${+d.slice(8)}</b><span class="dstrip__dots">${dots || '<em></em>'}</span></button>`;
+  }).join('')}</div>`;
+}
+
+function spotlight(b, state) {
+  const n = now();
+  const price = servicePrice(settings, b.services);
+  const label = { now: t('a_in_chair'), next: t('a_k_next'), first: t('a_first_of_day') }[state];
+  const when = state === 'now' ? t('a_until', { t: toHHMM(b.end) }) : state === 'next' ? t('a_in', { t: dur(b.start - n.min) }) : '';
+  return `<section class="card spot spot--${state}" data-id="${b.id}">
+    <div class="spot__top"><span class="spot__label"><span class="spot__dot"></span>${esc(label)}</span>${when ? `<span class="spot__when">${esc(when)}</span>` : ''}</div>
+    <div class="spot__body">
+      <div class="spot__time"><b>${toHHMM(b.start)}</b><small>${toHHMM(b.end)}</small></div>
+      <div class="spot__who">
+        <h3>${esc(b.name)}</h3>
+        <a class="spot__phone" href="tel:${esc(normalPhone(b.phone))}">${PHONE_ICON}<span>${esc(prettyPhone(b.phone))}</span></a>
+        <p class="spot__what">${esc(what(b))} · ${b.end - b.start} min${price != null ? ' · ' + fmtPrice(price) : ''}</p>
+        ${b.note ? `<p class="spot__note">“${esc(b.note)}”</p>` : ''}
+      </div>
+    </div>
+    <div class="spot__actions">
+      <a class="btn btn--line" href="tel:${esc(normalPhone(b.phone))}">${PHONE_ICON}<span>${t('a_call')}</span></a>
+      <a class="btn btn--line" href="${waLink(b)}" target="_blank" rel="noopener">${WA_ICON}<span>WhatsApp</span></a>
+      <button class="btn btn--gold" type="button" data-quick="completed" data-id="${b.id}">${TICK_ICON}<span>${t('a_mark_done')}</span></button>
+    </div>
+  </section>`;
+}
+
+// The day's appointments in order, with the free gaps between them.
+function dayList(day, list) {
+  const ranges = settings.hours[weekday(day)] || [];
+  if (!list.length) return `<p class="empty-note">${esc(isOpen(settings, day) ? t('a_no_appts') : t('a_closed_day'))}</p>`;
+  const out = [];
+  let cursor = ranges.length ? toMin(ranges[0][0]) : list[0].start;
+  const gap = (a, z) => (z - a >= settings.step ? `<div class="gap"><span>${t('a_free_gap')}</span><b>${toHHMM(a)} – ${toHHMM(z)}</b><button class="link-btn" type="button" data-new="${day}|${a}">+ ${t('a_new_short')}</button></div>` : '');
+  for (const b of list) {
+    out.push(gap(cursor, b.start));
+    out.push(appt(b));
+    cursor = Math.max(cursor, b.end);
+  }
+  const close = ranges.length ? toMin(ranges.at(-1)[1]) : cursor;
+  out.push(gap(cursor, close));
+  return out.join('');
+}
+
+function appt(b) {
+  if (b.status === 'blocked') {
+    return `<article class="appt appt--blocked" data-id="${b.id}"><div class="appt__time"><b>${toHHMM(b.start)}</b><small>${toHHMM(b.end)}</small></div>
+      <div class="appt__who"><b>${esc(b.name || t('a_status_blocked'))}</b><small>${t('a_status_blocked')}</small></div></article>`;
+  }
+  return `<article class="appt appt--${b.status}${highlight.has(b.id) ? ' is-new' : ''}" data-id="${b.id}">
+    <div class="appt__time"><b>${toHHMM(b.start)}</b><small>${toHHMM(b.end)}</small></div>
+    <div class="appt__who">
+      <b>${esc(b.name)}${b.source === 'web' ? `<span class="appt__web">${t('a_source_web')}</span>` : ''}</b>
+      <a class="appt__phone" href="tel:${esc(normalPhone(b.phone))}">${esc(prettyPhone(b.phone))}</a>
+      <small>${esc(what(b))}${b.note ? ' · “' + esc(b.note) + '”' : ''}</small>
+    </div>
+    <div class="appt__side">
+      ${b.status === 'confirmed'
+        ? `<a class="qbtn qbtn--wa" href="${waLink(b)}" target="_blank" rel="noopener" aria-label="WhatsApp">${WA_ICON}</a>
+           <a class="qbtn" href="tel:${esc(normalPhone(b.phone))}" aria-label="${esc(t('a_call'))}">${PHONE_ICON}</a>
+           <button class="qbtn qbtn--done" type="button" data-quick="completed" data-id="${b.id}" aria-label="${esc(t('a_mark_done'))}">${TICK_ICON}</button>`
+        : `<span class="pill pill--${b.status}">${t('a_status_' + b.status)}</span>`}
+    </div>
+  </article>`;
+}
+
+function stats() {
+  const n = now();
   const ws = monday(n.day);
   let open = 0, used = 0, weekCount = 0;
   for (let i = 0; i < 7; i++) {
     const d = addDays(ws, i);
     open += (settings.hours[weekday(d)] || []).reduce((s, [o, c]) => s + toMin(c) - toMin(o), 0) * settings.chairs;
-    for (const b of all) if (b.day === d && live(b)) { used += b.end - b.start; weekCount++; }
+    for (const b of all) if (b.day === d && live(b) && b.status !== 'blocked') { used += b.end - b.start; weekCount++; }
   }
   const fill = open ? Math.round(used / open * 100) : 0;
-
   const since = addDays(n.day, -30);
   const firstSeen = {};
   for (const b of all) if (b.status !== 'blocked' && b.phone) { const k = key(b.phone); if (!firstSeen[k] || b.day < firstSeen[k]) firstSeen[k] = b.day; }
   const newClients = Object.values(firstSeen).filter((d) => d >= since && d <= n.day).length;
   const past30 = all.filter((b) => b.day >= since && b.day < n.day && b.status !== 'blocked' && b.status !== 'cancelled');
   const noShow = past30.length ? Math.round(past30.filter((b) => b.status === 'no_show').length / past30.length * 100) : 0;
+  const todayLive = all.filter((b) => b.day === n.day && live(b) && b.status !== 'blocked');
   // Takings only make sense once every service has a price.
   const priced = settings.services.filter((x) => x.active).every((x) => x.price != null);
   const takings = priced ? todayLive.reduce((sum, b) => sum + (servicePrice(settings, b.services) || 0), 0) : null;
-
-  $('#view').innerHTML = `
-    <div class="kpis">
-      <div class="card kpi"><span>${t('a_k_today')}</span><b>${todayLive.length}</b><small>${t('a_k_done', { n: done })}</small></div>
-      <div class="card kpi kpi--accent"><span>${t('a_k_next')}</span><b>${nextLabel}</b></div>
-      <div class="card kpi"><span>${t('a_k_fill')}</span><b>${fill}%</b><div class="meter"><i style="--w:${Math.min(fill, 100)}%"></i></div><small>${t('a_k_week_n', { n: weekCount })}</small></div>
-      <div class="card kpi"><span>${t('a_k_new')}</span><b>${newClients}</b><small>${t('a_k_noshow')}: ${noShow}% · ${t('a_k_revenue')}: ${takings == null ? `<a href="#" data-go="settings">${t('a_k_set_prices')}</a>` : fmtPrice(takings)}</small></div>
-    </div>
-    <div class="today">
-      <section class="card"><div class="card__head"><h2>${t('a_today_list')}</h2></div><div class="card__body">${timeline(n.day)}</div></section>
-      <section class="card"><div class="card__head"><h2>${t('a_upcoming')}</h2></div><div class="card__body"><div class="list">${upcoming()}</div></div></section>
-    </div>`;
-  $('[data-go]', $('#view'))?.addEventListener('click', (e) => { e.preventDefault(); view = 'settings'; render(); });
-  bindEvents();
+  return `<section class="card stats">
+    <div class="stat"><span>${t('a_k_today')}</span><b>${todayLive.length}</b></div>
+    <div class="stat"><span>${t('a_k_fill')}</span><b>${fill}%</b><div class="meter"><i style="--w:${Math.min(fill, 100)}%"></i></div><small>${t('a_k_week_n', { n: weekCount })}</small></div>
+    <div class="stat"><span>${t('a_k_new')}</span><b>${newClients}</b></div>
+    <div class="stat"><span>${t('a_k_noshow')}</span><b>${noShow}%</b></div>
+    <div class="stat"><span>${t('a_k_revenue')}</span>${takings == null ? `<a href="#" data-go="settings">${t('a_k_set_prices')}</a>` : `<b>${fmtPrice(takings)}</b>`}</div>
+  </section>`;
 }
 
 const dur = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60 ? (m % 60) + ' min' : ''}`.trim());
@@ -160,48 +276,17 @@ function lanes(list) {
   return out;
 }
 
-function timeline(day) {
-  if (!isOpen(settings, day) && !all.some((b) => b.day === day && b.status !== 'cancelled')) return `<p class="empty-note">${t('a_closed_today')}</p>`;
-  const [a, z] = span([day]);
-  const H = 58;
-  const px = (m) => (m - a) / 60 * H;
-  const list = all.filter((b) => b.day === day && b.status !== 'cancelled');
-  const lane = lanes(list.filter((b) => b.status !== 'blocked'));
-  const hours = [];
-  for (let m = a; m <= z; m += 60) hours.push(`<span style="top:${px(m)}px">${toHHMM(m)}</span>`);
-  const n = now();
-  const nowLine = day === n.day && n.min >= a && n.min <= z ? `<div class="tl__now" style="top:${px(n.min)}px"></div>` : '';
-  const lanesHtml = Array.from({ length: settings.chairs }, (_, i) => `<div class="tl__lane" style="height:${px(z)}px"><span class="tl__lane-name">${t('a_chair', { n: i + 1 })}</span>
-    ${list.filter((b) => b.status !== 'blocked' && lane.get(b.id) === i).map((b) => ev(b, px(b.start), (b.end - b.start) / 60 * H)).join('')}</div>`).join('');
-  const blocks = list.filter((b) => b.status === 'blocked').map((b) => ev(b, px(b.start), (b.end - b.start) / 60 * H)).join('');
-  return `<div class="tl" style="--h:${H}px; padding-top:26px"><div class="tl__hours" style="height:${px(z)}px">${hours.join('')}</div>
-    <div class="tl__lanes" style="--chairs:${settings.chairs}">${lanesHtml}<div class="tl__blocks">${blocks}</div>${nowLine}</div></div>`;
-}
-
+// An appointment block in the week agenda: name, phone and service, as much as its height allows.
 function ev(b, top, height) {
   const cls = `ev ev--${b.status}${highlight.has(b.id) ? ' ev--new' : ''}`;
-  const label = b.status === 'blocked' ? esc(b.name || t('a_status_blocked')) : esc(b.name);
-  const sub = b.status === 'blocked' ? `${toHHMM(b.start)}–${toHHMM(b.end)}` : `${toHHMM(b.start)} · ${esc(what(b))}`;
-  return `<button class="${cls}" type="button" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 22)}px"><b>${label}</b>${height > 34 ? `<small>${sub}</small>` : ''}</button>`;
-}
-
-function upcoming() {
-  const n = now();
-  const list = all.filter((b) => b.status === 'confirmed' && (b.day > n.day || (b.day === n.day && b.end > n.min))).sort((a, b) => a.day.localeCompare(b.day) || a.start - b.start).slice(0, 9);
-  if (!list.length) return `<p class="empty-note">${t('a_empty_day')}</p>`;
-  return list.map((b) => row(b, true)).join('');
-}
-
-function row(b, showDay) {
-  const dayLabel = b.day === now().day ? t('a_today') : fmtDay(b.day, { weekday: 'short', day: 'numeric', month: 'short' });
-  return `<button class="row" type="button" data-id="${b.id}">
-    <span class="row__time">${toHHMM(b.start)}${showDay ? `<small>${esc(dayLabel)}</small>` : ''}</span>
-    <span class="row__who"><b>${esc(b.name)}</b><small>${esc(what(b))}${b.note ? ' · ' + esc(b.note) : ''}</small></span>
-    <span class="pill pill--${b.source === 'web' && b.status === 'confirmed' ? 'web' : b.status}">${b.source === 'web' && b.status === 'confirmed' ? t('a_source_web') : t('a_status_' + b.status)}</span></button>`;
+  if (b.status === 'blocked') return `<button class="${cls}" type="button" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 22)}px"><b>${esc(b.name || t('a_status_blocked'))}</b>${height > 34 ? `<small>${toHHMM(b.start)}–${toHHMM(b.end)}</small>` : ''}</button>`;
+  return `<button class="${cls}" type="button" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 22)}px">
+    <b>${toHHMM(b.start)} · ${esc(b.name)}</b>${height > 34 ? `<small>${esc(prettyPhone(b.phone))}</small>` : ''}${height > 52 ? `<small>${esc(what(b))}</small>` : ''}</button>`;
 }
 
 function bindEvents() {
-  $$('[data-id]', $('#view')).forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); openBooking(el.dataset.id); }));
+  $$('[data-id]', $('#view')).forEach((el) => el.addEventListener('click', (e) => { if (e.target.closest('[data-quick]')) return; e.stopPropagation(); openBooking(el.dataset.id); }));
+  $$('[data-new]', $('#view')).forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); const [d, m] = el.dataset.new.split('|'); openNew({ day: d, start: +m }); }));
 }
 
 /* ---------------- agenda ---------------- */
@@ -412,10 +497,10 @@ function openBooking(id) {
       <div class="actions"><button class="btn btn--line wide" type="button" data-act="delete">${t('a_delete')}</button></div>`);
   } else {
     openDrawer(`<span class="pill pill--${b.status}">${t('a_status_' + b.status)}</span><h2>${esc(b.name)}</h2>
+      <a class="drawer__phone" href="tel:${esc(normalPhone(b.phone))}">${PHONE_ICON}<span>${esc(prettyPhone(b.phone))}</span></a>
       <p class="drawer__sub">${esc(fmtDay(b.day))} · ${toHHMM(b.start)}–${toHHMM(b.end)}</p>
       <dl class="dl">
         <div><dt>${t('a_services')}</dt><dd>${esc(what(b))}${price != null ? ' · ' + fmtPrice(price) : ''}</dd></div>
-        <div><dt>${t('a_phone')}</dt><dd><a href="tel:${esc(normalPhone(b.phone))}">${esc(b.phone)}</a></dd></div>
         ${b.email ? `<div><dt>${t('a_email')}</dt><dd><a href="mailto:${esc(b.email)}">${esc(b.email)}</a></dd></div>` : ''}
         ${b.note ? `<div><dt>${t('a_note')}</dt><dd>${esc(b.note)}</dd></div>` : ''}
         <div><dt>${t('a_code')}</dt><dd>${esc(b.code)} · ${b.source === 'web' ? t('a_source_web') : t('a_source_admin')}</dd></div>
@@ -433,7 +518,7 @@ function openBooking(id) {
   $$('[data-act]', $('#drawer')).forEach((btn) => btn.addEventListener('click', async () => {
     const act = btn.dataset.act;
     if (act === 'delete') { if (!confirm(t('a_confirm_delete'))) return; await store.deleteBooking(b.id); }
-    else await store.updateBooking(b.id, { status: act });
+    else { try { await store.updateBooking(b.id, { status: act }); } catch { toast(t('a_m_busy_warn')); return; } }
     await load(); closeDrawer(); render();
   }));
   $('[data-client]', $('#drawer'))?.addEventListener('click', (e) => openClient(e.currentTarget.dataset.client));
@@ -443,7 +528,7 @@ function openClient(k) {
   const c = clients().find((x) => x.key === k);
   if (!c) return;
   const last = [...c.bookings].reverse();
-  openDrawer(`<h2>${esc(c.name)}</h2><p class="drawer__sub">${esc(c.phone)}</p>
+  openDrawer(`<h2>${esc(c.name)}</h2><a class="drawer__phone" href="tel:${esc(normalPhone(c.phone))}">${PHONE_ICON}<span>${esc(prettyPhone(c.phone))}</span></a>
     <dl class="dl">
       <div><dt>${t('a_c_visits')}</dt><dd>${c.visits}</dd></div>
       <div><dt>${t('a_c_fav')}</dt><dd>${esc(c.fav)}</dd></div>
@@ -481,7 +566,9 @@ function openNew(pre) {
     const free = freeSlots({ settings, day: f.day.value, length: len, busy: all, now: null });
     const cur = f.start.value ? toMin(f.start.value) : null;
     $('#free').innerHTML = free.slice(0, 40).map((x) => `<button type="button" data-m="${x}" class="${x === cur ? 'is-on' : ''}">${toHHMM(x)}</button>`).join('') || '—';
-    $('#warn').hidden = cur == null || free.includes(cur) || !isOpen(settings, f.day.value);
+    const clash = cur != null && !fits(settings, all, f.day.value, cur, cur + len);
+    $('#warn').hidden = !clash;
+    f.querySelector('[type=submit]').disabled = clash;
   };
   f.addEventListener('change', refresh); f.start.addEventListener('input', refresh);
   $('#free').addEventListener('click', (e) => { const b = e.target.closest('[data-m]'); if (b) { f.start.value = toHHMM(+b.dataset.m); refresh(); } });
@@ -490,7 +577,9 @@ function openNew(pre) {
     e.preventDefault();
     const services = chosen(); if (!services.length || !f.name.value.trim() || !f.start.value) return;
     const start = toMin(f.start.value);
-    await store.addManual({ day: f.day.value, start, end: start + serviceLength(settings, services), services, name: f.name.value.trim(), phone: f.phone.value.trim(), note: f.note.value.trim(), lang: getLang(), status: 'confirmed' });
+    if (!fits(settings, all, f.day.value, start, start + serviceLength(settings, services))) { $('#warn').hidden = false; return; }
+    try { await store.addManual({ day: f.day.value, start, end: start + serviceLength(settings, services), services, name: f.name.value.trim(), phone: f.phone.value.trim(), note: f.note.value.trim(), lang: getLang(), status: 'confirmed' }); }
+    catch { await load(); refresh(); $('#warn').hidden = false; return; }
     m.close(); await load(); render(); toast(t('a_saved'));
   });
   refresh(); m.showModal();

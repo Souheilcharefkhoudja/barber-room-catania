@@ -21,8 +21,8 @@ export const SHOP = {
 
 // Starting settings. Durations are working defaults for the owner to confirm; prices stay empty until he sets them.
 export const DEFAULT_SETTINGS = {
-  chairs: 2,              // clients that can be served at the same time
-  step: 15,               // minutes between possible start times
+  chairs: 1,              // clients at the same time: 1 = never two clients booked for the same time
+  step: 30,               // minutes between possible start times
   minNotice: 60,          // a client cannot book less than this many minutes ahead
   horizon: 30,            // days ahead that can be booked
   // Opening hours per weekday, Sunday first: [] = closed, otherwise [[open, close], ...] in "HH:MM".

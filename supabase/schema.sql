@@ -1,4 +1,5 @@
 -- Barber Room: database for live mode. Paste into Supabase → SQL editor → Run, once.
+-- With settings.chairs = 1 (the default) two appointments can never overlap: book() refuses the second one.
 -- Visitors can read the opening settings and the busy times (no names, no numbers) and can book only through book(),
 -- which re-checks the slot under a lock. Everything else is for the signed-in owner.
 
@@ -101,6 +102,30 @@ begin
     returning bookings.id, bookings.code, null::text;
 end;
 $$;
+
+-- The same rule for everything else (the owner's own entries, a cancelled booking brought back): no overlaps.
+create or replace function no_overlap() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  chairs int := coalesce((select (data->>'chairs')::int from settings where id = 1), 1);
+  peak int;
+begin
+  if new.status not in ('confirmed', 'completed') then return new; end if;
+  perform pg_advisory_xact_lock(hashtext('book-' || new.day::text));
+  if exists (select 1 from bookings b where b.id <> new.id and b.day = new.day and b.status = 'blocked' and b.start_min < new.end_min and b.end_min > new.start_min) then
+    raise exception 'slot-taken';
+  end if;
+  select coalesce(max(c), 0) into peak from (
+    select (select count(*) from bookings b2 where b2.id <> new.id and b2.day = new.day and b2.status in ('confirmed', 'completed') and b2.start_min <= m and b2.end_min > m) c
+    from (select new.start_min as m union select b.start_min from bookings b where b.id <> new.id and b.day = new.day and b.start_min > new.start_min and b.start_min < new.end_min) pts
+  ) x;
+  if peak >= chairs then raise exception 'slot-taken'; end if;
+  return new;
+end;
+$$;
+drop trigger if exists bookings_no_overlap on bookings;
+create trigger bookings_no_overlap before insert or update of day, start_min, end_min, status on bookings
+  for each row execute function no_overlap();
 
 revoke all on function book(jsonb) from public;
 grant execute on function book(jsonb) to anon, authenticated;
