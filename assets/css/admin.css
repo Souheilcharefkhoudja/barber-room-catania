@@ -420,3 +420,38 @@ body { min-height: 100svh; background: radial-gradient(70% 50% at 100% 0%, rgb(v
 .qrcard img { animation: floaty 6s ease-in-out infinite; }
 @keyframes floaty { 50% { transform: translateY(-6px) rotate(-1deg); } }
 @media (prefers-reduced-motion: reduce) { .spot::before, .spot__time b, .qrcard img { animation: none; } }
+
+/* ---------- Phones ---------- */
+.top__lang { display: none; }
+@media (max-width: 820px) {
+  .top { position: relative; }
+  .top__lang { display: inline-flex; position: absolute; top: -12px; right: 0; }
+  .top__lang button { padding: 10px 12px; }
+  .top__kicker { min-height: 24px; margin-bottom: 14px; padding-right: 110px; }
+  .link-btn, .demo button { padding: 10px 4px; margin: -10px -4px; }
+  .demo { padding: 8px 14px; font-size: 12.5px; }
+  .toggle { width: 50px; height: 30px; }
+  .toggle::after { width: 24px; height: 24px; }
+  .toggle:checked::after { transform: translateX(20px); }
+  .drawer { width: 100vw; padding: 22px 18px calc(26px + env(safe-area-inset-bottom)); border-left: 0; }
+  .modal { width: calc(100vw - 16px); max-height: calc(100svh - 16px); border-radius: 18px; }
+}
+@media (max-width: 600px) {
+  /* The week becomes one day per screen: swipe sideways from day to day. */
+  .week { scroll-snap-type: x mandatory; scroll-padding-left: 52px; overscroll-behavior-x: contain; }
+  .week__grid { grid-template-columns: 52px repeat(var(--days), calc(100vw - 86px)); min-width: 0; }
+  .week__head:not(:first-child) { scroll-snap-align: start; }
+  .ev { left: 6px; right: 6px; padding: 8px 12px; }
+  .ev .ev__name { font-size: 15.5px; }
+  .ev__wa { font-size: 14px; }
+  .ev__wa svg { width: 15px; height: 15px; }
+  .ev--short .ev__name { font-size: 14.5px; }
+  .ev--short .ev__wa { font-size: 13px; }
+}
+.week__hint { margin: -4px 0 10px; font-size: 12.5px; color: var(--muted); }
+@media (min-width: 601px) { .week__hint { display: none; } }
+.tl__hours span:first-child { transform: translateY(2px); }
+@media (max-width: 820px) {
+  .drawer__phone { padding: 12px 18px 12px 14px; }
+  .freeslots button { min-height: 44px; min-width: 64px; }
+}

@@ -62,6 +62,7 @@ async function enter() {
   $('#demoBar').hidden = store.mode !== 'demo';
   $('#logout').hidden = store.mode === 'demo'; // nothing to sign out of in the demo
   await load();
+  weekStart = thisWeek();
   render();
   store.onChange?.(async () => {
     const before = new Set(all.map((b) => b.id));
@@ -71,6 +72,12 @@ async function enter() {
     render();
   });
   setInterval(() => { if (view === 'today') render(); }, 60000);
+}
+// The week to open on: this one, or the next if the salon has no open days left in it (a Sunday, say).
+function thisWeek() {
+  const d = now().day, ws = monday(d);
+  for (let x = d; x < addDays(ws, 7); x = addDays(x, 1)) if (isOpen(settings, x)) return ws;
+  return addDays(ws, 7);
 }
 async function load() { settings = await store.settings(); all = await store.allBookings(); }
 
@@ -297,7 +304,7 @@ function lanes(list) {
 
 // An appointment block in the week agenda: full name and WhatsApp number always, the service when there is room.
 function ev(b, top, height) {
-  const cls = `ev ev--${b.status}${highlight.has(b.id) ? ' ev--new' : ''}${height < 50 ? ' ev--short' : ''}`;
+  const cls = `ev ev--${b.status}${highlight.has(b.id) ? ' ev--new' : ''}${b.end - b.start < 30 ? ' ev--short' : ''}`;
   const box = `class="${cls}" role="button" tabindex="0" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 30)}px"`;
   if (b.status === 'blocked') return `<div ${box}><span class="ev__time">${toHHMM(b.start)}–${toHHMM(b.end)}</span><b>${esc(b.name || t('a_status_blocked'))}</b></div>`;
   return `<div ${box}>
@@ -318,7 +325,8 @@ function bindEvents() {
 function renderAgenda() {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((d) => isOpen(settings, d) || all.some((b) => b.day === d && b.status !== 'cancelled'));
   const [a, z] = span(days);
-  const H = 132; // px per hour: a 30-minute cut has room for the full name and the number
+  // px per hour: a 30-minute cut has room for the full name and the number; taller on phones, where the text is bigger
+  const H = matchMedia('(max-width: 600px)').matches ? 168 : 132;
   const px = (m) => (m - a) / 60 * H;
   const n = now();
   $('#topKicker').textContent = t('a_agenda');
@@ -349,13 +357,18 @@ function renderAgenda() {
         <button class="icon-btn" type="button" id="wkNext" aria-label="${esc(t('a_week_next'))}">${ICON.next}</button>
       </div>
     </div>
+    <p class="week__hint">${t('a_swipe')}</p>
     <div class="week"><div class="week__grid" style="--days:${days.length};--h:${H}px">
       <div class="week__head"></div>${heads.join('')}
       <div class="tl__hours" style="height:${px(z)}px">${hours.join('')}</div>${cols.join('')}
     </div></div>`;
+  // On a phone the week shows one day at a time: open it on today, or on the first day of another week.
+  const at = Math.max(0, days.indexOf(n.day));
+  const head = $$('.week__head', $('#view'))[at + 1];
+  if (head && matchMedia('(max-width: 600px)').matches) $('.week', $('#view')).scrollLeft = head.offsetLeft - 52;
   $('#wkPrev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); entering = true; render(); });
   $('#wkNext').addEventListener('click', () => { weekStart = addDays(weekStart, 7); entering = true; render(); });
-  $('#wkToday').addEventListener('click', () => { weekStart = monday(n.day); render(); });
+  $('#wkToday').addEventListener('click', () => { weekStart = thisWeek(); entering = true; render(); });
   bindEvents();
   // A tap on an empty spot starts a new appointment at that time.
   $$('.week__col', $('#view')).forEach((col) => col.addEventListener('click', (e) => {

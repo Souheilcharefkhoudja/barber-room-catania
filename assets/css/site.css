@@ -348,3 +348,22 @@ p { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   .booker, .chip-opt, .chip-opt.is-on, #dayStrip.anim .day, #slots.anim .slot, .slot.is-on, .day.is-on, .free-row li, .block--first .head > *, .done > *, .btn--book::after, .free-row li:first-child::after, .first::after { animation: none !important; opacity: 1; transform: none; }
 }
+
+@media (max-width: 820px) {
+  .foot__line a, .foot__small a { display: inline-block; padding: 10px 4px; margin: -10px -4px; }
+}
+@media (max-width: 400px) {
+  .nav { gap: 10px; padding-left: 14px; padding-right: 14px; }
+  .brand { gap: 9px; }
+  .brand__name { white-space: nowrap; font-size: 17px; }
+  .brand__name small { font-size: 9px; }
+  .nav .lang button { padding: 11px 10px; }
+  .block--first { padding-top: 96px; }
+  .block--first .head { margin-bottom: 22px; }
+  .block--first .head h2 { font-size: 38px; }
+  .book__chips { gap: 6px; margin-top: 14px; }
+  .book__chips .chip { min-height: 34px; padding: 0 12px; font-size: 12.5px; }
+  .book__chips .chip b { font-size: 15px; }
+  .free-row { margin-top: 12px; gap: 6px; }
+  .free-row li { padding: 7px 11px; font-size: 12.5px; }
+}
