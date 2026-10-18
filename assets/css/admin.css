@@ -397,3 +397,26 @@ body { min-height: 100svh; background: radial-gradient(70% 50% at 100% 0%, rgb(v
   .qrcard { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .qrcard__btns { justify-content: center; }
 }
+
+/* ---------- Motion ---------- */
+.is-enter .dstrip, .is-enter .card, .is-enter .appt, .is-enter .gap, .is-enter .row, .is-enter .stat, .is-enter .week__head { animation: glide .7s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.is-enter .ev { animation: evIn .6s var(--ease-out) both; animation-delay: calc(.15s + var(--i, 0) * 25ms); }
+.is-enter .meter i { animation: grow 1.4s .3s var(--ease-out) both; }
+@keyframes glide { from { opacity: 0; transform: translateY(16px); } }
+@keyframes evIn { from { opacity: 0; transform: scale(.92); } }
+@keyframes grow { from { width: 0; } }
+.dstrip__day.is-on { animation: picked .45s var(--ease-out); }
+@keyframes picked { 0% { transform: scale(.92); } 55% { transform: scale(1.06); } 100% { transform: none; } }
+.spot::before { content: ''; position: absolute; inset: 0; z-index: 0; background: linear-gradient(105deg, transparent 40%, rgb(var(--gold-rgb) / .13) 50%, transparent 60%); transform: translateX(-110%); animation: sheen 7s 1.5s ease-in-out infinite; pointer-events: none; }
+.spot > * { position: relative; z-index: 1; }
+@keyframes sheen { 0% { transform: translateX(-110%); } 35%, 100% { transform: translateX(110%); } }
+.spot__time b { background: linear-gradient(100deg, var(--gold-deep), var(--gold) 25%, #fff4da 50%, var(--gold) 75%, var(--gold-deep)); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: foil 7s ease-in-out infinite; }
+@keyframes foil { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+.qbtn:active, .btn:active { transform: scale(.94); }
+.appt { transition: border-color .3s, background .3s, transform .4s var(--ease-out), box-shadow .4s; }
+.appt:hover { box-shadow: 0 16px 30px -22px rgb(var(--gold-rgb) / .7); }
+.ev { transition: transform .3s var(--ease-out), background .3s, box-shadow .3s; }
+.ev:hover { box-shadow: 0 12px 24px -14px #000; z-index: 3; }
+.qrcard img { animation: floaty 6s ease-in-out infinite; }
+@keyframes floaty { 50% { transform: translateY(-6px) rotate(-1deg); } }
+@media (prefers-reduced-motion: reduce) { .spot::before, .spot__time b, .qrcard img { animation: none; } }

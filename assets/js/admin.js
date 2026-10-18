@@ -1,7 +1,7 @@
 import { SHOP, DEMO_PIN } from './config.js';
 import { createStore } from './store.js';
 import { freeSlots, fits, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday, normalPhone, parseDay, ACTIVE } from './engine.js';
-import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcEmoji } from './i18n.js';
+import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -24,7 +24,7 @@ let highlight = new Set();
 function monday(day) { return addDays(day, -((weekday(day) + 6) % 7)); }
 const now = () => shopNow(SHOP.timezone);
 const svc = (id) => settings.services.find((s) => s.id === id);
-const what = (b) => (svc(b.services[0]) ? svcEmoji(svc(b.services[0])) + ' ' : '') + b.services.map((id) => (svc(id) ? svcName(svc(id)) : id)).join(' + ');
+const what = (b) => b.services.map((id) => (svc(id) ? svcName(svc(id)) : id)).join(' + ');
 const live = (b) => ACTIVE.has(b.status);
 const key = (phone) => normalPhone(phone).replace(/\D/g, '');
 const whenIn = (lang, b) => `${new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parseDay(b.day))} ${lang === 'en' ? 'at' : 'alle'} ${toHHMM(b.start)}`;
@@ -75,7 +75,7 @@ async function enter() {
 async function load() { settings = await store.settings(); all = await store.allBookings(); }
 
 $('#demoReset').addEventListener('click', async () => { await store.resetDemo(); await load(); render(); });
-$$('#tabs [data-view]').forEach((b) => b.addEventListener('click', () => { view = b.dataset.view; if (view === 'today') dayView = null; closeDrawer(); render(); scrollTo({ top: 0 }); }));
+$$('#tabs [data-view]').forEach((b) => b.addEventListener('click', () => { view = b.dataset.view; if (view === 'today') dayView = null; entering = true; closeDrawer(); render(); scrollTo({ top: 0 }); }));
 $('#newBtn').addEventListener('click', () => openNew({}));
 $('#blockBtn').addEventListener('click', () => openBlock({}));
 document.addEventListener('langchange', () => { if (!$('#app').hidden) render(); else showLogin(); });
@@ -86,6 +86,24 @@ function render() {
   $$('#tabs [data-view]').forEach((b) => b.classList.toggle('is-on', b.dataset.view === view));
   $('#topActions').hidden = view === 'settings' || view === 'clients';
   ({ today: renderToday, agenda: renderAgenda, clients: renderClients, settings: renderSettings })[view]();
+  if (entering) { entering = false; playEnter(); }
+}
+
+// Opening a tab or a day: the cards glide in one after the other and the numbers count up. Live refreshes stay still.
+let entering = true;
+function playEnter() {
+  const v = $('#view');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  $$('.dstrip, .spot, .card, .appt, .gap, .ev, .row, .stat, .week__head', v).forEach((el, i) => el.style.setProperty('--i', Math.min(i, 30)));
+  v.classList.remove('is-enter'); void v.offsetWidth; v.classList.add('is-enter');
+  clearTimeout(playEnter.t); playEnter.t = setTimeout(() => v.classList.remove('is-enter'), 2200);
+  $$('.stat b, .kpi b', v).forEach((b) => {
+    const m = b.textContent.match(/^(\D*)(\d+)(.*)$/);
+    if (!m || +m[2] === 0) return;
+    const [, a, num, z] = m, end = +num, t0 = performance.now();
+    const step = (now) => { const p = Math.min((now - t0) / 1100, 1); b.textContent = a + Math.round(end * (1 - Math.pow(1 - p, 3))) + z; if (p < 1) requestAnimationFrame(step); };
+    b.textContent = a + 0 + z; requestAnimationFrame(step);
+  });
 }
 
 /* ---------------- today: one day, as a clean list ---------------- */
@@ -129,7 +147,7 @@ function renderToday() {
       <aside class="dayview__side">${stats()}</aside>
     </div>`;
 
-  $$('[data-goday]', $('#view')).forEach((b) => b.addEventListener('click', () => { dayView = b.dataset.goday === n.day ? null : b.dataset.goday; render(); }));
+  $$('[data-goday]', $('#view')).forEach((b) => b.addEventListener('click', () => { dayView = b.dataset.goday === n.day ? null : b.dataset.goday; entering = true; render(); }));
   $$('[data-quick]', $('#view')).forEach((b) => b.addEventListener('click', async (e) => {
     e.stopPropagation();
     try { await store.updateBooking(b.dataset.id, { status: b.dataset.quick }); } catch { toast(t('a_m_busy_warn')); return; }
@@ -335,8 +353,8 @@ function renderAgenda() {
       <div class="week__head"></div>${heads.join('')}
       <div class="tl__hours" style="height:${px(z)}px">${hours.join('')}</div>${cols.join('')}
     </div></div>`;
-  $('#wkPrev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); render(); });
-  $('#wkNext').addEventListener('click', () => { weekStart = addDays(weekStart, 7); render(); });
+  $('#wkPrev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); entering = true; render(); });
+  $('#wkNext').addEventListener('click', () => { weekStart = addDays(weekStart, 7); entering = true; render(); });
   $('#wkToday').addEventListener('click', () => { weekStart = monday(n.day); render(); });
   bindEvents();
   // A tap on an empty spot starts a new appointment at that time.

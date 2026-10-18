@@ -1,13 +1,14 @@
 import { SHOP } from './config.js';
 import { createStore } from './store.js';
 import { freeSlots, slotGrid, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday } from './engine.js';
-import { t, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcEmoji, svcDesc } from './i18n.js';
+import { t, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcDesc } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const store = createStore();
+const anim = { service: undefined, day: undefined }; // what the day strip and times last animated for
 store.seedDemo?.(); // demo only: example bookings, so the calendar looks the way it will in real use
 let settings = await store.settings();
 let busy = [];
@@ -69,7 +70,7 @@ function renderOpen() {
 function renderServices() {
   $('#serviceGrid').innerHTML = settings.services.filter((s) => s.active).map((s, i) => `
     <article class="svc reveal">
-      <span class="svc__n">${String(i + 1).padStart(2, '0')}</span><span class="svc__emoji" aria-hidden="true">${svcEmoji(s)}</span>
+      <span class="svc__n">${String(i + 1).padStart(2, '0')}</span>
       <h3>${esc(svcName(s))}</h3>
       <p>${esc(svcDesc(s))}</p>
       <div class="svc__foot">
@@ -108,9 +109,9 @@ function firstFree() {
 }
 
 function renderChips() {
-  $('#svcChips').innerHTML = settings.services.filter((s) => s.active).map((s) => `
-    <button class="chip-opt${state.service === s.id ? ' is-on' : ''}" type="button" data-svc="${s.id}" aria-pressed="${state.service === s.id}">
-      <span class="chip-opt__emoji" aria-hidden="true">${svcEmoji(s)}</span>${esc(svcName(s))}<small>${s.min} ${t('min')}${s.price != null ? ' · ' + fmtPrice(s.price) : ''}</small></button>`).join('');
+  $('#svcChips').innerHTML = settings.services.filter((s) => s.active).map((s, i) => `
+    <button class="chip-opt${state.service === s.id ? ' is-on' : ''}" type="button" data-svc="${s.id}" aria-pressed="${state.service === s.id}" style="--i:${i}">
+      ${esc(svcName(s))}<small>${s.min} ${t('min')}${s.price != null ? ' · ' + fmtPrice(s.price) : ''}</small></button>`).join('');
 }
 $('#svcChips').addEventListener('click', (e) => {
   const b = e.target.closest('[data-svc]');
@@ -141,10 +142,13 @@ function renderWhen() {
   for (let i = 0; i <= settings.horizon; i++) {
     const day = addDays(today, i);
     const ok = isOpen(settings, day) && slotsFor(day).length > 0;
-    days.push(`<button class="day${state.day === day ? ' is-on' : ''}" type="button" data-day="${day}" ${ok ? '' : 'disabled'}>
+    days.push(`<button class="day${state.day === day ? ' is-on' : ''}" type="button" data-day="${day}" ${ok ? '' : 'disabled'} style="--i:${days.length}">
       <small>${esc(i === 0 ? t('today') : fmtDay(day, { weekday: 'short' }))}</small><b>${+day.slice(8)}</b><span>${esc(fmtDay(day, { month: 'short' }))}</span></button>`);
   }
   $('#dayStrip').innerHTML = days.join('');
+  $('#dayStrip').classList.toggle('anim', anim.service !== state.service);
+  $('#slots').classList.toggle('anim', anim.service !== state.service || anim.day !== state.day);
+  Object.assign(anim, { service: state.service, day: state.day });
   const on = $('#dayStrip .is-on');
   if (on) $('#dayStrip').scrollLeft = on.offsetLeft - $('#dayStrip').offsetLeft - 8;
 
@@ -153,11 +157,12 @@ function renderWhen() {
   const grid = slotGrid({ settings, day: state.day, length: length(), busy, now: shopNow(SHOP.timezone) });
   if (!grid.some((x) => x.free)) { $('#slots').innerHTML = `<p class="empty">${esc(t('no_slots'))}</p>`; return; }
   const groups = [[t('morning'), grid.filter((x) => x.t < 13 * 60)], [t('afternoon'), grid.filter((x) => x.t >= 13 * 60)]].filter(([, l]) => l.length);
+  let n = 0;
   $('#slots').innerHTML = groups.map(([name, list]) => `
     <div class="slot-group"><h4>${esc(name)}</h4><div class="slot-grid">
       ${list.map((x) => x.free
-        ? `<button class="slot${state.start === x.t ? ' is-on' : ''}" type="button" data-min="${x.t}">${toHHMM(x.t)}</button>`
-        : `<span class="slot is-taken" title="${esc(t('taken'))}" aria-label="${toHHMM(x.t)} · ${esc(t('taken'))}">${toHHMM(x.t)}</span>`).join('')}
+        ? `<button class="slot${state.start === x.t ? ' is-on' : ''}" type="button" data-min="${x.t}" style="--i:${n++}">${toHHMM(x.t)}</button>`
+        : `<span class="slot is-taken" title="${esc(t('taken'))}" aria-label="${toHHMM(x.t)} · ${esc(t('taken'))}" style="--i:${n++}">${toHHMM(x.t)}</span>`).join('')}
     </div></div>`).join('') + `<p class="slot-legend"><span class="slot is-taken">00:00</span>${esc(t('taken_legend'))}</p>`;
 }
 $('#dayStrip').addEventListener('click', (e) => {
@@ -213,13 +218,27 @@ $('#rowWho').addEventListener('submit', async (e) => {
     state.done = { ...res, day: state.day, start: state.start, services: [state.service] };
     f.reset();
     $('#bkFlow').hidden = true; $('#done').hidden = false;
-    renderDone(); reveal('#booker');
+    renderDone(); sparkle(); reveal('#booker');
   } catch (ex) {
     await loadBusy();
     if (/slot-taken|too-late|closed/.test(ex.message)) { state.start = null; renderWhen(); renderWho(); toast(t('err_taken')); reveal('#rowWhen'); }
     else err('err_generic');
   } finally { $('#bookBtn').disabled = false; }
 });
+
+// A burst of gold around the tick when the booking goes through.
+function sparkle() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const host = $('.done__tick');
+  host.querySelectorAll('.spark').forEach((x) => x.remove());
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('i');
+    s.className = 'spark';
+    const a = (i / 22) * Math.PI * 2 + Math.random() * .3, r = 70 + Math.random() * 60;
+    s.style.cssText = `--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r}px;--d:${.35 + Math.random() * .35}s;--s:${3 + Math.random() * 5}px`;
+    host.appendChild(s);
+  }
+}
 
 function renderDone() {
   const d = state.done;
