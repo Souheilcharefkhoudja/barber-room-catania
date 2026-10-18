@@ -45,9 +45,10 @@ class LocalStore {
   }
 
   // ---- admin ----
-  async login(pin) { if (pin !== DEMO_PIN) throw new Error('bad-login'); sessionStorage.setItem(KEY + '.auth', '1'); this.seedDemo(); }
-  async session() { return true; } // demo: the panel opens with no PIN
-  async logout() { sessionStorage.removeItem(KEY + '.auth'); }
+  // The PIN is asked once per phone, then remembered until "Sign out".
+  async login(pin) { if (pin !== DEMO_PIN) throw new Error('bad-login'); localStorage.setItem(KEY + '.auth', '1'); this.seedDemo(); }
+  async session() { return localStorage.getItem(KEY + '.auth') === '1'; }
+  async logout() { localStorage.removeItem(KEY + '.auth'); }
   async bookings(from, to) { return this.read().bookings.filter((b) => b.day >= from && b.day <= to).sort((a, b) => a.day.localeCompare(b.day) || a.start - b.start); }
   async allBookings() { return this.read().bookings; }
   async updateBooking(id, patch) {

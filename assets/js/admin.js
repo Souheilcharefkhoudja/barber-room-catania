@@ -1,4 +1,4 @@
-import { SHOP, DEMO_PIN } from './config.js';
+import { SHOP } from './config.js';
 import { createStore } from './store.js';
 import { freeSlots, fits, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday, normalPhone, parseDay, ACTIVE } from './engine.js';
 import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName } from './i18n.js';
@@ -44,7 +44,7 @@ function showLogin() {
     ? `<input class="input pin" name="pin" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="8" aria-label="PIN" placeholder="••••" autofocus>`
     : `<input class="input" name="email" type="email" autocomplete="username" placeholder="${esc(t('a_login_email'))}" required>
        <input class="input" name="password" type="password" autocomplete="current-password" placeholder="${esc(t('a_login_pass'))}" required>`;
-  $('#loginHint').textContent = store.mode === 'demo' ? t('a_login_demo', { pin: DEMO_PIN }) : '';
+  $('#loginHint').textContent = ''; // the PIN is given privately, not printed on the page
 }
 $('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -60,7 +60,6 @@ async function enter() {
   if (store.mode === 'demo') store.seedDemo();
   $('#login').hidden = true; $('#app').hidden = false;
   $('#demoBar').hidden = store.mode !== 'demo';
-  $('#logout').hidden = store.mode === 'demo'; // nothing to sign out of in the demo
   await load();
   weekStart = thisWeek();
   render();

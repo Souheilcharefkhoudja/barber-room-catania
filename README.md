@@ -15,7 +15,7 @@ Both are in Italian and English. Visitors whose phone is not set to Italian see 
 With `SUPABASE` empty in `assets/js/config.js`, everything is stored in the browser:
 
 - book on `index.html`, then open `admin.html` in another tab of the same browser: the booking appears at once;
-- the admin panel opens with no PIN (in live mode the barber signs in once with email and password and stays signed in, so client names and numbers stay private);
+- the admin panel asks for a PIN once per device (`DEMO_PIN` in `config.js`, default 1234; it is not shown on the page). In live mode the barber signs in once with email and password instead;
 - the booking QR code is in `assets/img/qr-prenota.svg|png`, with a printable A5 counter card at `qr.html`; after moving to a new domain run `python tools/qr.py https://new-domain/#prenota`;
 - the panel loads about 90 invented clients and five weeks of appointments so it looks lived-in. They are labelled as demo
   data and use phone numbers of the form +39 300 000 0xxx. "Reload example data" resets them.
