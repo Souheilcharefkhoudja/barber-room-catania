@@ -90,11 +90,20 @@ p { color: var(--muted); }
 .block--book { background: radial-gradient(80% 60% at 50% 0%, rgb(var(--oxblood-rgb) / .2), transparent 70%), var(--ink-900); }
 .block--book .head { margin-inline: auto; text-align: center; }
 .block--book .kicker { justify-content: center; }
+/* Booking opens the page: just below the bar, before the hero. */
+.block--first { padding-top: clamp(112px, 15vh, 150px); border-top: 0; }
+.block--first .head { margin-bottom: clamp(26px, 4vh, 40px); }
+.book__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+.block--book .free-row { justify-content: center; }
 .booker { max-width: 880px; margin: 0 auto; border: 1px solid var(--hair); border-radius: 24px; background: rgb(12 9 8 / .72); box-shadow: 0 50px 120px -60px #000; overflow: hidden; }
 .booker::before { content: ''; display: block; height: 5px; background: repeating-linear-gradient(135deg, var(--oxblood) 0 10px, var(--cream) 10px 14px, var(--gold) 14px 24px, var(--cream) 24px 28px);
   background-size: 200px 100%; animation: pole 6s linear infinite; opacity: .9; }
 @keyframes pole { to { background-position: 200px 0; } }
 .bk__row { padding: clamp(24px, 3.6vw, 40px); animation: rowIn .7s var(--ease-out); }
+.free-row { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 22px 0 0; padding: 0; list-style: none; }
+.free-row li { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1px solid rgb(var(--gold-rgb) / .35); border-radius: 99px; background: rgb(var(--gold-rgb) / .08); font: 500 13px/1 var(--body); letter-spacing: .02em; }
+.free-row li:first-child { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border-color: transparent; color: var(--ink-950); font-weight: 600; }
+.done__free { margin: 18px auto 0; max-width: 34ch; padding: 12px 18px; border: 1px dashed rgb(var(--gold-rgb) / .45); border-radius: 12px; color: var(--gold-bright); font-size: 14.5px; }
 .bk__row + .bk__row { border-top: 1px solid var(--hair); }
 @keyframes rowIn { from { opacity: 0; transform: translateY(14px); } }
 .bk__q { display: flex; align-items: center; gap: 14px; margin: 0 0 20px; font: 400 clamp(24px, 2.4vw, 31px)/1.15 var(--display); }
@@ -104,6 +113,8 @@ p { color: var(--muted); }
 .chip-opt { all: unset; box-sizing: border-box; display: inline-flex; align-items: baseline; gap: 10px; min-height: 52px; padding: 14px 20px; border: 1px solid var(--hair); border-radius: 999px; cursor: pointer;
   font: 400 18px/1.1 var(--display); transition: border-color .3s, background .3s, color .3s, transform .4s var(--ease-out); -webkit-tap-highlight-color: transparent; }
 .chip-opt small { font: 500 12px/1 var(--body); color: var(--muted); }
+.chip-opt__emoji { font-size: 18px; line-height: 1; margin-right: -2px; }
+.svc__emoji { position: absolute; top: 22px; right: 22px; font-size: 30px; line-height: 1; filter: drop-shadow(0 6px 14px rgb(0 0 0 / .5)); }
 .chip-opt:hover { border-color: rgb(var(--gold-rgb) / .7); }
 .chip-opt:active { transform: scale(.97); }
 .chip-opt.is-on { background: var(--gold); border-color: var(--gold); color: var(--ink-950); }

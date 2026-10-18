@@ -1,13 +1,14 @@
 import { SHOP } from './config.js';
 import { createStore } from './store.js';
 import { freeSlots, slotGrid, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday } from './engine.js';
-import { t, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcDesc } from './i18n.js';
+import { t, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcEmoji, svcDesc } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const store = createStore();
+store.seedDemo?.(); // demo only: example bookings, so the calendar looks the way it will in real use
 let settings = await store.settings();
 let busy = [];
 // The whole booking is three choices: a service, a time, a name. Nothing to click "next" on.
@@ -68,7 +69,7 @@ function renderOpen() {
 function renderServices() {
   $('#serviceGrid').innerHTML = settings.services.filter((s) => s.active).map((s, i) => `
     <article class="svc reveal">
-      <span class="svc__n">${String(i + 1).padStart(2, '0')}</span>
+      <span class="svc__n">${String(i + 1).padStart(2, '0')}</span><span class="svc__emoji" aria-hidden="true">${svcEmoji(s)}</span>
       <h3>${esc(svcName(s))}</h3>
       <p>${esc(svcDesc(s))}</p>
       <div class="svc__foot">
@@ -109,7 +110,7 @@ function firstFree() {
 function renderChips() {
   $('#svcChips').innerHTML = settings.services.filter((s) => s.active).map((s) => `
     <button class="chip-opt${state.service === s.id ? ' is-on' : ''}" type="button" data-svc="${s.id}" aria-pressed="${state.service === s.id}">
-      ${esc(svcName(s))}<small>${s.min} ${t('min')}${s.price != null ? ' · ' + fmtPrice(s.price) : ''}</small></button>`).join('');
+      <span class="chip-opt__emoji" aria-hidden="true">${svcEmoji(s)}</span>${esc(svcName(s))}<small>${s.min} ${t('min')}${s.price != null ? ' · ' + fmtPrice(s.price) : ''}</small></button>`).join('');
 }
 $('#svcChips').addEventListener('click', (e) => {
   const b = e.target.closest('[data-svc]');
@@ -226,9 +227,8 @@ function renderDone() {
   const when = `${relDay(d.day)} ${getLang() === 'it' ? 'alle' : 'at'} ${toHHMM(d.start)}`;
   const what = d.services.map((id) => svcName(settings.services.find((s) => s.id === id))).join(' + ');
   $('#doneLead').textContent = t('done_lead', { when });
-  $('#doneCode').textContent = d.code;
   $('#doneChange').textContent = t('done_change', { phone: SHOP.phone.shown });
-  $('#waLink').href = `https://wa.me/${SHOP.phone.intl.replace('+', '')}?text=${encodeURIComponent(t('wa_client', { what, when, code: d.code }))}`;
+  $('#waLink').href = `https://wa.me/${SHOP.phone.intl.replace('+', '')}?text=${encodeURIComponent(t('wa_client', { what, when }))}`;
   $('#icsLink').href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics(d, what));
 }
 
@@ -240,7 +240,7 @@ function ics(d, what) {
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
     `DTSTART;TZID=${SHOP.timezone}:${stamp(d.day, d.start)}`, `DTEND;TZID=${SHOP.timezone}:${stamp(d.day, d.start + len)}`,
     `SUMMARY:Barber Room — ${what}`, `LOCATION:${SHOP.address}\\, ${SHOP.postal} ${SHOP.city}`,
-    `DESCRIPTION:${t('done_code')}: ${d.code} · ${SHOP.phone.shown}`,
+    `DESCRIPTION:Barber Room · ${SHOP.phone.shown}`,
     'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Barber Room', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
 }
 

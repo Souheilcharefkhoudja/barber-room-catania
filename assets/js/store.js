@@ -5,7 +5,7 @@
 import { SUPABASE, DEFAULT_SETTINGS, DEMO_PIN, SHOP } from './config.js';
 import { freeSlots, fits, ACTIVE, serviceLength, makeCode, shopNow, addDays, isOpen, toMin } from './engine.js';
 
-const KEY = 'barberroom.v3';
+const KEY = 'barberroom.v4';
 
 export function createStore() {
   return SUPABASE.url ? new SupabaseStore() : new LocalStore();
@@ -46,7 +46,7 @@ class LocalStore {
 
   // ---- admin ----
   async login(pin) { if (pin !== DEMO_PIN) throw new Error('bad-login'); sessionStorage.setItem(KEY + '.auth', '1'); this.seedDemo(); }
-  async session() { return sessionStorage.getItem(KEY + '.auth') === '1'; }
+  async session() { return true; } // demo: the panel opens with no PIN
   async logout() { sessionStorage.removeItem(KEY + '.auth'); }
   async bookings(from, to) { return this.read().bookings.filter((b) => b.day >= from && b.day <= to).sort((a, b) => a.day.localeCompare(b.day) || a.start - b.start); }
   async allBookings() { return this.read().bookings; }
@@ -75,12 +75,15 @@ class LocalStore {
     const first = ['Marco', 'Luca', 'Giuseppe', 'Andrea', 'Davide', 'Salvo', 'Antonio', 'Francesco', 'Matteo', 'Alessio', 'Paolo', 'Simone', 'Gabriele', 'Riccardo',
       'Emanuele', 'Nicolò', 'Giovanni', 'Lorenzo', 'Stefano', 'Fabio', 'Roberto', 'Carmelo', 'Alfio', 'Sebastiano', 'Vincenzo', 'Dario', 'Mario', 'Claudio', 'Enzo', 'Gianluca'];
     const tourists = ['James', 'Thomas', 'Daniel', 'Oliver', 'Karim', 'Lucas', 'Hugo', 'Max'];
+    const last = ['Russo', 'Grasso', 'Distefano', 'Lombardo', 'Leonardi', 'Rapisarda', 'Pappalardo', 'Musumeci', 'Scuderi', 'Caruso', 'Spampinato', 'Messina',
+      'Ferlito', 'Vitale', 'Platania', 'Santonocito', 'Torrisi', 'Patanè', 'Nicotra', 'Barbagallo', 'Cannizzaro', 'Pulvirenti', 'Zappalà', 'Sciuto', 'Condorelli', 'Puglisi'];
+    const touristLast = ['Smith', 'Walker', 'Bennett', 'Hughes', 'Benali', 'Dubois', 'Martin', 'Weber'];
     let seed = 7;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const letter = () => 'ABCDEFGLMNPRSTVZ'[Math.floor(rnd() * 16)];
     const people = Array.from({ length: 90 }, (_, i) => {
       const en = i % 9 === 8;
-      return { name: `${en ? tourists[i % tourists.length] : first[i % first.length]} ${letter()}.`, lang: en ? 'en' : 'it', phone: `+39 300 000 ${String(i + 100).padStart(4, '0')}` };
+      const name = en ? `${tourists[i % tourists.length]} ${touristLast[Math.floor(rnd() * touristLast.length)]}` : `${first[i % first.length]} ${last[Math.floor(rnd() * last.length)]}`;
+      return { name, lang: en ? 'en' : 'it', phone: `+39 300 000 ${String(i + 100).padStart(4, '0')}` };
     });
     const ids = s.settings.services.map((x) => x.id);
     const today = shopNow(SHOP.timezone).day;

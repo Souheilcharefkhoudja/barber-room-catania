@@ -45,48 +45,21 @@
 
 <main id="top">
 
-  <!-- ============ Hero ============ -->
-  <section class="hero">
-    <div class="hero__glow" aria-hidden="true"></div>
-    <div class="hero__text">
-      <p class="kicker rise" style="--d:.05s"><span class="kicker__line"></span><span data-t="hero_kicker">Barber Room · Catania</span></p>
-      <h1 class="hero__title rise" style="--d:.15s"><span data-t="hero_title_a">Specialisti nella cura</span> <em data-t="hero_title_b">della barba e dei capelli.</em></h1>
-      <p class="hero__lead rise" style="--d:.3s" data-t="hero_lead"></p>
-      <div class="hero__cta rise" style="--d:.42s">
-        <a class="btn btn--gold" href="#prenota"><span data-t="hero_book">Prenota il tuo posto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        <a class="btn btn--line" href="#servizi" data-t="hero_services">Vedi i servizi</a>
-      </div>
-      <div class="hero__chips rise" style="--d:.55s">
-        <a class="chip" id="ratingChip" target="_blank" rel="noopener"><b>4,9</b><span class="stars" style="--v:4.9"></span><span id="ratingCount"></span></a>
-        <span class="chip chip--status" id="openChip"></span>
-      </div>
-    </div>
-    <div class="hero__art rise" style="--d:.2s">
-      <figure class="arch"><img src="assets/img/poltrone.webp" alt="Le poltrone rosso bordeaux di Barber Room" width="1200" height="1600" fetchpriority="high"></figure>
-      <figure class="medal"><img src="assets/img/sfumatura.webp" alt="Sfumatura e barba" width="720" height="720"></figure>
-      <span class="seal" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><path id="ring" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0"/></defs><text><textPath href="#ring">BARBER ROOM · HAIR &amp; BEARD · CATANIA · </textPath></text></svg><i>BR</i></span>
-    </div>
-  </section>
-
-  <div class="ribbon" aria-hidden="true"><div class="ribbon__track" id="ribbon"></div></div>
-
-  <!-- ============ Services ============ -->
-  <section class="block" id="servizi">
-    <div class="wrap">
-      <header class="head">
-        <p class="kicker"><span class="kicker__line"></span><span data-t="services_kicker">I servizi</span></p>
-        <h2 data-t-html="services_title"></h2>
-      </header>
-      <div class="services" id="serviceGrid"></div>
-    </div>
-  </section>
-
   <!-- ============ Booking ============ -->
-  <section class="block block--book" id="prenota">
+  <section class="block block--book block--first" id="prenota">
     <div class="wrap">
       <header class="head">
         <p class="kicker"><span class="kicker__line"></span><span data-t="book_kicker">Prenotazione</span></p>
         <h2 data-t-html="book_title"></h2>
+        <div class="book__chips">
+          <a class="chip" id="ratingChip" target="_blank" rel="noopener"><b>4,9</b><span class="stars" style="--v:4.9"></span><span id="ratingCount"></span></a>
+          <span class="chip chip--status" id="openChip"></span>
+        </div>
+        <ul class="free-row">
+          <li><span data-t="free_1"></span></li>
+          <li><span data-t="free_2"></span></li>
+          <li><span data-t="free_3"></span></li>
+        </ul>
       </header>
 
       <!-- One screen: tap a service, tap a time, leave a name and a number. -->
@@ -131,7 +104,7 @@
           <div class="done__tick" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg></div>
           <h3 class="done__title" data-t="done_title"></h3>
           <p class="done__lead" id="doneLead"></p>
-          <div class="done__code"><span data-t="done_code"></span><b id="doneCode"></b></div>
+          <p class="done__free" data-t="done_free"></p>
           <div class="done__actions">
             <a class="btn btn--gold" id="icsLink" download="barber-room.ics"><span data-t="done_calendar"></span></a>
             <a class="btn btn--line" id="waLink" target="_blank" rel="noopener"><span data-t="done_whatsapp"></span></a>
@@ -142,6 +115,39 @@
       </div>
     </div>
   </section>
+
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__text">
+      <p class="kicker rise" style="--d:.05s"><span class="kicker__line"></span><span data-t="hero_kicker">Barber Room · Catania</span></p>
+      <h1 class="hero__title rise" style="--d:.15s"><span data-t="hero_title_a">Specialisti nella cura</span> <em data-t="hero_title_b">della barba e dei capelli.</em></h1>
+      <p class="hero__lead rise" style="--d:.3s" data-t="hero_lead"></p>
+      <div class="hero__cta rise" style="--d:.42s">
+        <a class="btn btn--gold" href="#prenota"><span data-t="hero_book">Prenota il tuo posto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn--line" href="#servizi" data-t="hero_services">Vedi i servizi</a>
+      </div>
+    </div>
+    <div class="hero__art rise" style="--d:.2s">
+      <figure class="arch"><img src="assets/img/poltrone.webp" alt="Le poltrone rosso bordeaux di Barber Room" width="1200" height="1600" fetchpriority="high"></figure>
+      <figure class="medal"><img src="assets/img/sfumatura.webp" alt="Sfumatura e barba" width="720" height="720"></figure>
+      <span class="seal" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><path id="ring" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0"/></defs><text><textPath href="#ring">BARBER ROOM · HAIR &amp; BEARD · CATANIA · </textPath></text></svg><i>BR</i></span>
+    </div>
+  </section>
+
+  <div class="ribbon" aria-hidden="true"><div class="ribbon__track" id="ribbon"></div></div>
+
+  <!-- ============ Services ============ -->
+  <section class="block" id="servizi">
+    <div class="wrap">
+      <header class="head">
+        <p class="kicker"><span class="kicker__line"></span><span data-t="services_kicker">I servizi</span></p>
+        <h2 data-t-html="services_title"></h2>
+      </header>
+      <div class="services" id="serviceGrid"></div>
+    </div>
+  </section>
+
 
   <!-- ============ Salon ============ -->
   <section class="block" id="salone">

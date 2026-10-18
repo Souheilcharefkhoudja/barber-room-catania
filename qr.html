@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barber Room — QR prenotazioni</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c0908">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  /* A counter card for the salon: print it on A5, or show it on a phone. */
+  :root { --ink: #0c0908; --blood: #7d1f26; --gold: #c8a45c; --gold-deep: #8d6e33; --cream: #f4ece0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { min-height: 100vh; display: grid; place-items: center; gap: 22px; padding: 28px 16px; background: #1a1311; color: var(--ink); font: 400 16px/1.5 'Inter', system-ui, sans-serif; }
+  .card { position: relative; width: min(100%, 148mm); aspect-ratio: 148 / 210; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr auto auto; justify-items: center; text-align: center;
+    padding: 9% 9% 7%; background: var(--cream); border-radius: 6px; box-shadow: 0 40px 80px -30px #000; }
+  .card::before, .card::after { content: ''; position: absolute; left: 0; right: 0; height: 2.2%; background: repeating-linear-gradient(135deg, var(--blood) 0 12px, var(--cream) 12px 17px, var(--gold) 17px 29px, var(--cream) 29px 34px); }
+  .card::before { top: 0; } .card::after { bottom: 0; }
+  .frame { position: absolute; inset: 4.4% 4%; border: 1px solid rgb(141 110 51 / .45); border-radius: 4px; pointer-events: none; }
+  .mono { display: grid; place-items: center; width: 15%; aspect-ratio: 1; border: 1.5px solid var(--gold-deep); border-radius: 50%; font: italic 400 clamp(16px, 4.6vw, 24px)/1 'Playfair Display', serif; color: var(--gold-deep); }
+  .name { margin: 3% 0 0; font: 400 clamp(11px, 2.2vw, 13px)/1 'Inter', sans-serif; letter-spacing: .32em; text-transform: uppercase; color: var(--gold-deep); }
+  .mid { align-self: center; display: grid; justify-items: center; width: 100%; }
+  h1 { margin: 0; font: 400 clamp(26px, 7.4vw, 44px)/1.05 'Playfair Display', serif; }
+  h1 em { display: block; font-family: 'Pinyon Script', cursive; font-style: normal; font-size: 1.15em; color: var(--blood); line-height: 1.1; }
+  .qr { width: 58%; margin: 6% 0 4%; padding: 3%; background: var(--cream); border: 1px solid rgb(141 110 51 / .5); border-radius: 10px; }
+  .qr img { display: block; width: 100%; height: auto; }
+  .scan { margin: 0; font: 600 clamp(10px, 2.3vw, 13px)/1.4 'Inter', sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+  .scan span { color: var(--gold-deep); }
+  .perks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 4% 0 0; padding: 0; list-style: none; }
+  .perks li { padding: 5px 11px; border-radius: 99px; background: var(--ink); color: var(--cream); font: 500 clamp(9.5px, 2vw, 12px)/1 'Inter', sans-serif; letter-spacing: .04em; }
+  .perks li b { color: #e6c98c; font-weight: 600; }
+  .foot { margin: 0; font-size: clamp(10px, 2vw, 12px); color: rgb(12 9 8 / .7); }
+  .foot b { color: var(--ink); font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .bar a, .bar button { all: unset; cursor: pointer; padding: 13px 22px; border-radius: 99px; font: 600 12px/1 'Inter', sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+  .bar .gold { background: linear-gradient(135deg, #e6c98c, var(--gold) 55%, var(--gold-deep)); color: var(--ink); }
+  .bar .line { border: 1px solid rgb(200 164 92 / .4); color: var(--cream); }
+  @page { size: A5; margin: 0; }
+  @media print {
+    body { display: block; min-height: 0; padding: 0; background: #fff; }
+    .card { width: 148mm; height: 210mm; border-radius: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .bar { display: none; }
+  }
+</style>
+</head>
+<body>
+  <article class="card">
+    <div class="frame"></div>
+    <div class="mono">BR</div>
+    <p class="name">Barber Room · Catania</p>
+    <div class="mid">
+      <h1>Prenota il tuo taglio <em>Book your cut</em></h1>
+      <div class="qr"><img src="assets/img/qr-prenota.svg" alt="QR code: souheilcharefkhoudja.github.io/barber-room-catania"></div>
+      <p class="scan">Inquadra con la fotocamera · <span>Scan with your camera</span></p>
+      <ul class="perks">
+        <li><b>Gratis</b> · Free</li>
+        <li>30 secondi · 30 seconds</li>
+        <li>Senza registrazione · No sign-up</li>
+      </ul>
+    </div>
+    <p class="foot">Piazza Michelangelo Buonarroti, 5/6 · <b>389 588 4163</b></p>
+  </article>
+  <div class="bar">
+    <button class="gold" type="button" onclick="print()">Stampa · Print</button>
+    <a class="line" href="assets/img/qr-prenota.png" download="barber-room-qr.png">Scarica PNG</a>
+    <a class="line" href="assets/img/qr-prenota.svg" download="barber-room-qr.svg">SVG</a>
+  </div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import { SHOP, DEMO_PIN } from './config.js';
 import { createStore } from './store.js';
 import { freeSlots, fits, serviceLength, servicePrice, shopNow, addDays, isOpen, toHHMM, toMin, weekday, normalPhone, parseDay, ACTIVE } from './engine.js';
-import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName } from './i18n.js';
+import { t, tl, apply, bindLangButtons, getLang, fmtDay, fmtPrice, svcName, svcEmoji } from './i18n.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -24,7 +24,7 @@ let highlight = new Set();
 function monday(day) { return addDays(day, -((weekday(day) + 6) % 7)); }
 const now = () => shopNow(SHOP.timezone);
 const svc = (id) => settings.services.find((s) => s.id === id);
-const what = (b) => b.services.map((id) => (svc(id) ? svcName(svc(id)) : id)).join(' + ');
+const what = (b) => (svc(b.services[0]) ? svcEmoji(svc(b.services[0])) + ' ' : '') + b.services.map((id) => (svc(id) ? svcName(svc(id)) : id)).join(' + ');
 const live = (b) => ACTIVE.has(b.status);
 const key = (phone) => normalPhone(phone).replace(/\D/g, '');
 const whenIn = (lang, b) => `${new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(parseDay(b.day))} ${lang === 'en' ? 'at' : 'alle'} ${toHHMM(b.start)}`;
@@ -60,6 +60,7 @@ async function enter() {
   if (store.mode === 'demo') store.seedDemo();
   $('#login').hidden = true; $('#app').hidden = false;
   $('#demoBar').hidden = store.mode !== 'demo';
+  $('#logout').hidden = store.mode === 'demo'; // nothing to sign out of in the demo
   await load();
   render();
   store.onChange?.(async () => {
@@ -276,16 +277,22 @@ function lanes(list) {
   return out;
 }
 
-// An appointment block in the week agenda: name, phone and service, as much as its height allows.
+// An appointment block in the week agenda: full name and WhatsApp number always, the service when there is room.
 function ev(b, top, height) {
-  const cls = `ev ev--${b.status}${highlight.has(b.id) ? ' ev--new' : ''}`;
-  if (b.status === 'blocked') return `<button class="${cls}" type="button" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 22)}px"><b>${esc(b.name || t('a_status_blocked'))}</b>${height > 34 ? `<small>${toHHMM(b.start)}–${toHHMM(b.end)}</small>` : ''}</button>`;
-  return `<button class="${cls}" type="button" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 22)}px">
-    <b>${toHHMM(b.start)} · ${esc(b.name)}</b>${height > 34 ? `<small>${esc(prettyPhone(b.phone))}</small>` : ''}${height > 52 ? `<small>${esc(what(b))}</small>` : ''}</button>`;
+  const cls = `ev ev--${b.status}${highlight.has(b.id) ? ' ev--new' : ''}${height < 50 ? ' ev--short' : ''}`;
+  const box = `class="${cls}" role="button" tabindex="0" data-id="${b.id}" style="top:${top}px;height:${Math.max(height - 3, 30)}px"`;
+  if (b.status === 'blocked') return `<div ${box}><span class="ev__time">${toHHMM(b.start)}–${toHHMM(b.end)}</span><b>${esc(b.name || t('a_status_blocked'))}</b></div>`;
+  return `<div ${box}>
+    <span class="ev__time">${toHHMM(b.start)}–${toHHMM(b.end)}</span><b class="ev__name">${esc(b.name)}</b>
+    ${b.phone ? `<a class="ev__wa" href="https://wa.me/${key(b.phone)}" target="_blank" rel="noopener">${WA_ICON}<span>${esc(prettyPhone(b.phone))}</span></a>` : ''}
+    ${height > 96 ? `<small>${esc(what(b))}</small>` : ''}</div>`;
 }
 
 function bindEvents() {
-  $$('[data-id]', $('#view')).forEach((el) => el.addEventListener('click', (e) => { if (e.target.closest('[data-quick]')) return; e.stopPropagation(); openBooking(el.dataset.id); }));
+  $$('[data-id]', $('#view')).forEach((el) => {
+    el.addEventListener('click', (e) => { if (e.target.closest('[data-quick], a')) return; e.stopPropagation(); openBooking(el.dataset.id); });
+    if (el.getAttribute('role') === 'button') el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBooking(el.dataset.id); } });
+  });
   $$('[data-new]', $('#view')).forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); const [d, m] = el.dataset.new.split('|'); openNew({ day: d, start: +m }); }));
 }
 
@@ -293,7 +300,7 @@ function bindEvents() {
 function renderAgenda() {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((d) => isOpen(settings, d) || all.some((b) => b.day === d && b.status !== 'cancelled'));
   const [a, z] = span(days);
-  const H = 64;
+  const H = 132; // px per hour: a 30-minute cut has room for the full name and the number
   const px = (m) => (m - a) / 60 * H;
   const n = now();
   $('#topKicker').textContent = t('a_agenda');
@@ -409,8 +416,14 @@ function renderSettings() {
   const s = structuredClone(settings);
   const dayNames = t('days_long');
   const order = [1, 2, 3, 4, 5, 6, 0];
+  const site = new URL('./#prenota', location.href).href;
   $('#view').innerHTML = `
     <div class="settings">
+      <section class="card qrcard" id="qr"><img src="assets/img/qr-prenota.svg" alt="QR" width="180" height="180">
+        <div><h2>${t('a_qr')}</h2><p>${t('a_qr_lead')}</p>
+          <div class="qrcard__btns"><a class="btn btn--gold btn--sm" href="qr.html" target="_blank" rel="noopener">${t('a_qr_print')}</a>
+            <a class="btn btn--line btn--sm" href="assets/img/qr-prenota.png" download="barber-room-qr.png">${t('a_qr_png')}</a>
+            <a class="btn btn--line btn--sm" href="https://wa.me/?text=${encodeURIComponent(site)}" target="_blank" rel="noopener">${t('a_qr_share')}</a></div></div></section>
       <section class="card"><div class="card__head"><h2>${t('a_s_services')}</h2><button class="link-btn" type="button" id="addSvc">+ ${t('a_s_add_service')}</button></div>
         <div class="card__body" style="overflow-x:auto"><table class="stable"><thead><tr><th>${t('a_s_name_it')}</th><th>${t('a_s_name_en')}</th><th>${t('a_s_min')}</th><th>${t('a_s_price')}</th><th>${t('a_s_active')}</th><th></th></tr></thead>
         <tbody id="svcRows"></tbody></table></div></section>
@@ -503,7 +516,7 @@ function openBooking(id) {
         <div><dt>${t('a_services')}</dt><dd>${esc(what(b))}${price != null ? ' · ' + fmtPrice(price) : ''}</dd></div>
         ${b.email ? `<div><dt>${t('a_email')}</dt><dd><a href="mailto:${esc(b.email)}">${esc(b.email)}</a></dd></div>` : ''}
         ${b.note ? `<div><dt>${t('a_note')}</dt><dd>${esc(b.note)}</dd></div>` : ''}
-        <div><dt>${t('a_code')}</dt><dd>${esc(b.code)} · ${b.source === 'web' ? t('a_source_web') : t('a_source_admin')}</dd></div>
+        <div><dt>${t('a_source')}</dt><dd>${b.source === 'web' ? t('a_source_web') : t('a_source_admin')}</dd></div>
         <div><dt>${t('a_lang')}</dt><dd>${b.lang === 'en' ? 'English' : 'Italiano'}</dd></div>
       </dl>
       <div class="actions">
